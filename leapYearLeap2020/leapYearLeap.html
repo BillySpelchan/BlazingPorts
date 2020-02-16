@@ -1,0 +1,116 @@
+<html>
+<head>
+<title>Leap Year Leap 2020</title>
+
+
+</head>
+
+<body onLoad="init()">
+<canvas id="game" width="640" height="480" onMouseDown="mouseDown(event)" onMouseMove="mouseMove(event)" onMouseUp="mouseUp(event)">No Canvas Support</canvas>
+<p>
+</p>
+
+
+<script src="BGLayers.js"></script>
+<script src="leapYearLeap.js"></script>
+<script>
+var cwg;
+var game;
+var isMouseDown = false;
+
+//var audio = new Audio('sounds/Xclickwav.mp3');
+
+function draw() 
+{
+	// my own set up and image code
+	var canvas = document.getElementById('game');
+	if ( ! canvas.getContext)
+		return;
+	var ctx = canvas.getContext('2d');
+//	ctx.drawImage(CanadaDay.Tiles, 20,20);
+//	ctx.rect(20, 20, 600, 440);
+//	ctx.stroke();
+	game.renderDirty(ctx);
+}
+
+function canvasMouseCoordsFromEvent(event)
+{
+	var canvas = document.getElementById('game');
+
+	var ox = event.offsetX;
+	if (ox == undefined)
+		ox = event.pageX-canvas.offsetLeft;
+	var oy = event.offsetY;
+	if (oy == undefined)
+		oy = event.pageY-canvas.offsetTop;
+	return new BGLayers.Point(ox, oy);	
+}
+
+
+function mouseDown(event)
+{
+	if ( !game ) return;
+	isMouseDown = true;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (game.mouseDown(p.x, p.y))
+		draw();
+}
+
+function mouseMove(event)
+{
+	if ( !game ) return;
+//	if ( ! isMouseDown) return;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (game.mouseMove(p.x, p.y))
+		draw();
+}
+
+function mouseUp(event)
+{
+//	audio.play();
+	if ( !game ) return;
+	isMouseDown = false;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (game.mouseUp(p.x, p.y))
+		draw();
+}
+function startNewGame()
+{
+
+	
+	draw();
+
+}
+
+function tick()
+{
+	if (game.tick())
+		draw();
+}
+
+function init()
+{
+	game = new LYL.Game();
+	startNewGame();
+	setInterval(tick, 50);
+}
+
+if (document.addEventListener)
+	document.addEventListener("keydown", handleKeyDown, false);
+else if (document.attachEvent) 
+	document.attachEvent("onkeydown", handleKeyDown);
+	
+function handleKeyDown(event) {
+	game.handleKeyDown(event.keyCode);
+	if (event && event.preventDefault) 
+		event.preventDefault();
+	else if (window.event && window.event.returnValue)
+		window.eventReturnValue = false;
+	draw();
+}
+
+</script>
+
+</body>
+</html>
+
