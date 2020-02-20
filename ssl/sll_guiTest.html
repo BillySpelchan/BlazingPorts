@@ -94,14 +94,27 @@ function init()
 	this.lastClick = new ClickView('lastClick', new SLLRectangle(100,200,400,50))
 	stage.addChild(this.lastClick)
 	button = new SLLTextButton('btn', new SLLRectangle(100,100,400,50), "Hello World!");
-	button.setClickHanlder(this.lastClick);
+	button.setClickHandler(this.lastClick);
 	stage.addChild(button);
+
 	woodButton = new SLLImageButton('wood', solImg, imageButtons.Wood, 5);
 	woodButton.moveTo(50,50);
 	woodButton.setText("Wood!");
-	woodButton.setClickHanlder(this.lastClick);
-	
+	woodButton.setClickHandler(this.lastClick);
 	stage.addChild(woodButton);
+
+	woodButton2 = new SLLImageButton("wood2", solImg, imageButtons.ContinueDown, 5);
+	woodButton2.moveTo(350,50);
+	woodButton2.setText("Wood!");
+	woodButton2.setClickHandler(this.lastClick);
+	stage.addChild(woodButton2);
+
+	multiImageButton = new SLLImageButton("Restart", solImg, imageButtons.RestartUp, 0);
+	multiImageButton.moveTo(50, 200);
+	multiImageButton.setClickHandler(this.lastClick);
+	multiImageButton.setClips(imageButtons.RestartUp, imageButtons.RestartOver, imageButtons.RestartDown, imageButtons.BlankButton);
+	stage.addChild(multiImageButton);
+	
 	draw();
 }
 </script>

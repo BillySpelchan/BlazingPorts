@@ -143,7 +143,7 @@ class SLLTextButton extends SLLLayer {
 		return oldState != this.state;
 	}
 
-	setClickHanlder(handler) {
+	setClickHandler(handler) {
 		this.onClickHandler = handler;
 	}
 	
@@ -180,5 +180,22 @@ class SLLImageButton extends SLLTextButton {
 		this.img.moveTo(border,border);
 		this.addChild(this.img);
 		this.addChild(this.message);
+		this.state_clips = [rect, null, null, null];
 	}
+	
+	drawSelf(ctx, bounds, drawOutsideBounds = false) {
+		if (this.state_clips[this.state] != null)
+			this.img.setClip(this.state_clips[this.state]);
+		if (this.border > 0)
+			return super.drawSelf(ctx, bounds, drawOutsideBounds);
+		return bounds;
+	}
+	
+	setClips(upClip, overClip=null, downClip=null, disabledClip=null) {
+		this.state_clips[SLL_BUTTON_STATES.UP] = upClip;
+		this.state_clips[SLL_BUTTON_STATES.DOWN] = downClip;
+		this.state_clips[SLL_BUTTON_STATES.OVER] = overClip;
+		this.state_clips[SLL_BUTTON_STATES.DISABLED] = disabledClip;
+	}
+
 }

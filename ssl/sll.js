@@ -449,7 +449,8 @@ BGLayers.Layer.prototype.renderDirty = function(ctx)
 class SLLImageLayer extends SLLLayer {
 	constructor(id, img, clip) {
 		super(id, clip.width, clip.height);
-		this._clip = clip;
+		this._clip = new SLLRectangle();
+		this._clip.clone(clip);
 		this._image = img;
 	}
 	
