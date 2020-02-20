@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Rectangle unit test</title>
+</head>
+<body onLoad='init()'>
+<table id="testTable" width="100%" border="1">
+  <tr>
+    <th scope="col">Test Group</th>
+    <th scope="col">Test Description</th>
+    <th scope="col">Results</th>
+  </tr>
+</table>
+<script src="sll.js"></script>
+<script language="javascript">
+var baseRect = new SLLRectangle(10,10,10,10);
+
+// point test
+var pointTopOutside = new SLLPoint(15,9);
+var pointTopInside = new SLLPoint(15,10);
+var pointLeftOutside = new SLLPoint(9,15);
+var pointLeftInside = new SLLPoint(10,15);
+var pointBottomOutside = new SLLPoint(15,20);
+var pointBottomInside = new SLLPoint(15,19);
+var pointRightOutside = new SLLPoint(20,15);
+var pointRigthInside = new SLLPoint(19,15);
+
+// Overlap test
+var topRectOutside = new SLLRectangle(10,0,10,10);
+var topRectInside = new SLLRectangle(10,1,10,10);
+var leftRectOutside = new SLLRectangle(0,10,10,10);
+var leftRectInside = new SLLRectangle(1,10,10,10);
+var bottomRectOutside = new SLLRectangle(10,20,10,10);
+var bottomRectInside = new SLLRectangle(10,19,10,10);
+var rightRectOutside = new SLLRectangle(20,10,10,10);
+var rightRectInside = new SLLRectangle(19,10,10,10);
+// containment
+var topRectContained = new SLLRectangle(10,10,10,1);
+var topRectSlightOut = new SLLRectangle(10,9,10,2);
+var leftRectContained = new SLLRectangle(10,10,1,10);
+var leftRectSlightOut = new SLLRectangle(9,10,2,10);
+var bottomRectContained = new SLLRectangle(10,19,10,1);
+var bottomRectSlightOut = new SLLRectangle(10,19,10,2);
+var rightRectContained = new SLLRectangle(19,10,1,10);
+var rightRectSlightOut = new SLLRectangle(19,10,2,10);
+
+function addTestResult(group, desc, result)
+{
+	var testTable = document.getElementById('testTable');
+	var rRow = testTable.insertRow(1);
+	var resText; 
+	if ( result)
+		resText = '<font color="#00FF00">Test Passed</font>';
+	else
+		resText = '<font color="#FF0000">Test Failed</font>';
+	rRow.innerHTML = '<td>'+group+'</td><td>'+desc+'</td><td>'+resText+'</td>';
+}
+
+function pointContainmentTest()
+{
+	var testName = "Point Containment";
+	addTestResult(testName, "Top Outside of Rectangle", ! baseRect.containsCoordinate(pointTopOutside.x, pointTopOutside.y));
+	addTestResult(testName, "Top Inside of Rectangle", baseRect.containsCoordinate(pointTopInside.x, pointTopInside.y));
+	addTestResult(testName, "Left Outside of Rectangle", ! baseRect.containsCoordinate(pointLeftOutside.x, pointLeftOutside.y));
+	addTestResult(testName, "Left Inside of Rectangle", baseRect.containsCoordinate(pointLeftInside.x, pointLeftInside.y));
+	addTestResult(testName, "Bottom Outside of Rectangle", ! baseRect.containsCoordinate(pointBottomOutside.x, pointBottomOutside.y));
+	addTestResult(testName, "Bottom Inside of Rectangle", baseRect.containsCoordinate(pointBottomInside.x, pointBottomInside.y));
+	addTestResult(testName, "Right Outside of Rectangle", ! baseRect.containsCoordinate(pointRightOutside.x, pointRightOutside.y));
+	addTestResult(testName, "Right Inside of Rectangle", baseRect.containsCoordinate(pointLeftInside.x, pointLeftInside.y));
+}
+
+function rectOverlapTest()
+{
+	var testName = "Retangle Overlap";
+	addTestResult(testName, "Top Outside of Rectangle", ! baseRect.intersects(topRectOutside));
+	addTestResult(testName, "Top Inside of Rectangle", baseRect.intersects(topRectInside));
+	addTestResult(testName, "Left Outside of Rectangle", ! baseRect.intersects(leftRectOutside));
+	addTestResult(testName, "Left Inside of Rectangle", baseRect.intersects(leftRectInside));
+	addTestResult(testName, "Bottom Outside of Rectangle", ! baseRect.intersects(bottomRectOutside));
+	addTestResult(testName, "Bottom Inside of Rectangle", baseRect.intersects(bottomRectInside));
+	addTestResult(testName, "Right Outside of Rectangle", ! baseRect.intersects(rightRectOutside));
+	addTestResult(testName, "Right Inside of Rectangle", baseRect.intersects(rightRectInside));
+}
+
+function containsRectangleTest()
+{
+	var testName = "Retangle Containment";
+	addTestResult(testName, "Top Contained Rectangle", baseRect.containsRectangle(topRectContained));
+	addTestResult(testName, "Top Overlapping Rectangle", ! baseRect.containsRectangle(topRectSlightOut));
+	addTestResult(testName, "Left Contained Rectangle", baseRect.containsRectangle(leftRectContained));
+	addTestResult(testName, "Left Overlapping Rectangle", ! baseRect.containsRectangle(leftRectSlightOut));
+	addTestResult(testName, "Bottom Contained Rectangle", baseRect.containsRectangle(bottomRectContained));
+	addTestResult(testName, "Bottom Overlapping Rectangle", ! baseRect.containsRectangle(bottomRectSlightOut));
+	addTestResult(testName, "Right Contained Rectangle", baseRect.containsRectangle(rightRectContained));
+	addTestResult(testName, "Right Overlapping Rectangle", ! baseRect.containsRectangle(rightRectSlightOut));
+}
+
+function init()
+{
+	pointContainmentTest();
+	rectOverlapTest();
+	containsRectangleTest();
+}
+</script>
+</body>
+</html>

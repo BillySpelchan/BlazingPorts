@@ -1,0 +1,124 @@
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>SLLLayers Test</title>
+</head>
+<body onLoad='init()'>
+<canvas id='game' width="640" height="480">Canvas not supported by your browser</canvas>
+<br clear="left" />
+
+<select name="size" id="size" onChange="onChangeFont()">
+	<option value="16">16</option>
+	<option value="20">20</option>
+	<option value="24">24</option>
+	<option value="32">32</option>
+	<option value="40">40</option>
+	<option value="44">44</option>
+	<option value="48">48</option>
+	<option value="50">50</option>
+</select>
+
+<select name="font_family" id="font_family" onChange="onChangeFont()">
+	<option value="courier">courier</option>
+	<option value="serif">serif</option>
+	<option value="sans-serif">sans-serif</option>
+	<option value="Aria">Aria</option>
+	<option value="monospace">monospace</option>
+	<option value="cursive">cursive</option>
+	<option value="fantasy">fantasy</option>
+	<option value="system-ui">system-ui</option>
+</select>
+
+<input type="checkbox" name="solid" id="solid" checked="true" onChange="onChangeFont()" >fill</input>
+<input type="checkbox" name="outline" id="outline" value="true" onChange="onChangeFont()" >outline</input>
+<input type="checkbox" name="bold" id="bold" value="true" onChange="onChangeFont()" >bold</input>
+<input type="checkbox" name="italic" id="italic" value="true" onChange="onChangeFont()" >italic</input>
+
+
+<select name="color" id="color" onChange="onChangeFont()">
+	<option value="#000">Black</option>
+	<option value="#F00">Red</option>
+	<option value="#0F0">Green</option>
+	<option value="#FF0">Yellow</option>
+	<option value="#00F">Blue</option>
+	<option value="#F0F">Purple</option>
+	<option value="#0FF">Cyan</option>
+	<option value="#FFF">white</option>
+</select>
+
+<select name="outcolor" id="outcolor" onChange="onChangeFont()">
+	<option value="#000">Black</option>
+	<option value="#F00">Red</option>
+	<option value="#0F0">Green</option>
+	<option value="#FF0">Yellow</option>
+	<option value="#00F">Blue</option>
+	<option value="#F0F">Purple</option>
+	<option value="#0FF">Cyan</option>
+	<option value="#FFF">white</option>
+</select>
+
+<script src="sll.js"></script>
+<script>
+var stage;
+var canvasRect = new SLLRectangle(0,0,640,480);
+var hello;
+
+function draw() 
+{
+	var canvas = document.getElementById('game');
+	if ( ! canvas.getContext)
+		return;
+	var ctx = canvas.getContext('2d');
+	var size = document.getElementById('size').value;
+	typeface=document.getElementById('font_family').value; 
+	bold=document.getElementById('bold').checked;
+	italic=document.getElementById('italic').checked;
+	solid=document.getElementById('solid').checked;
+	outline=document.getElementById('outline').checked;
+	hello.setFont(size, typeface, bold, italic, solid, outline);
+	colr = document.getElementById('color').value;
+	ocolr = document.getElementById('outcolor').value;
+	hello.setColor(colr, ocolr);
+	stage.render(ctx, canvasRect);
+
+}
+
+function init(){
+	stage = new SLLLayer('stage', 640, 480);
+	stage.setBackgroundColor("#BBB");
+
+/*	
+	refRect = (160, 50, 320, 50);
+	ref = new SLLTextLayer("ref", refRect, "scaling test");
+	stage.addChild(ref);
+	smallRect = (200, 100, 256, 40);
+	small = new SLLTextLayer("small", refRect, "scaling test");
+	largeRect = (160, 150, 320, 50);
+	large = new SLLTextLayer("large", refRect, "scaling test");
+*/	
+	hello = new SLLTextLayer("hello", new SLLRectangle(100,300,400,50), "Hello \nTextLayer");
+	stage.addChild(hello);
+	
+	rect = new SLLRectangle(10,10,620,40);
+	leftTest = new SLLTextLayer("left", rect, "LEFT");
+	stage.addChild(leftTest);
+	centerTest = new SLLTextLayer("center", rect, "CENTER");
+	centerTest.setAlignment("center");
+	stage.addChild(centerTest);
+	rightTest = new SLLTextLayer("right", rect, "RIGHT");
+	rightTest.setAlignment("right");
+	stage.addChild(rightTest);
+	
+	draw();	
+	
+}
+
+function onChangeFont() {
+	draw();
+}
+
+</script>
+</body>
+</html>
