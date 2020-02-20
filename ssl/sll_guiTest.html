@@ -26,6 +26,17 @@ var imageButtons = {
 
 var stage;
 var canvasRect = new SLLRectangle(0,0,640,480);
+var lastClick;
+
+class ClickView extends SLLTextLayer {
+	constructor(lid, bounds) {
+		super(lid, bounds, "No button clicked")
+	}
+	
+	buttonClicked(btn) {
+		this.setText("Last button clicked: " + btn.id);
+	}
+}
 
 function canvasMouseCoordsFromEvent(event)
 {
@@ -80,11 +91,16 @@ function init()
 {
 	stage = new SLLLayer('stage', 640, 480);
 	stage.setBackgroundColor("#555");
-	
+	this.lastClick = new ClickView('lastClick', new SLLRectangle(100,200,400,50))
+	stage.addChild(this.lastClick)
 	button = new SLLTextButton('btn', new SLLRectangle(100,100,400,50), "Hello World!");
+	button.setClickHanlder(this.lastClick);
 	stage.addChild(button);
 	woodButton = new SLLImageButton('wood', solImg, imageButtons.Wood, 5);
 	woodButton.moveTo(50,50);
+	woodButton.setText("Wood!");
+	woodButton.setClickHanlder(this.lastClick);
+	
 	stage.addChild(woodButton);
 	draw();
 }

@@ -28,11 +28,11 @@ class SLLTextButton extends SLLLayer {
 		this.message = new SLLTextLayer(lid+"_txt", 
 				new SLLRectangle(border,gap, rect.width - border*2, gap*3), message);
 		this.message.setAlignment("center");
-		this.message.setFont(gap*3, "fantasy");
+		this.message.setFont(gap*3, "sans-serif", false, false, true, true);
 		this.addChild(this.message);
 		this.state = SLL_BUTTON_STATES.UP;
 		this._isDown = false;
-		
+		this.onClickHandler = null;
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false)
@@ -111,6 +111,7 @@ class SLLTextButton extends SLLLayer {
 		if (this.state == SLL_BUTTON_STATES.DISABLED)
 			return false;
 		var real = this.findRealPosition();
+		var oldState = this.state
 		if (real.containsCoordinate(x,y))
 			if (this._isDown)
 				this.state = SLL_BUTTON_STATES.DOWN;
@@ -121,17 +122,31 @@ class SLLTextButton extends SLLLayer {
 		else
 			this.state = SLL_BUTTON_STATES.UP;
 			//this.setBackgroundColor(this.upColors[SLL_BUTTON_COLOR.BACK]);
-		// todo optimize 
-		return true;
+		
+		return this.state != oldState;
 	}
 	
 	mouseUp(x,y) {
-		// todo handle click response
+		if (this.state == SLL_BUTTON_STATES.DISABLED)
+			return false;
+		var real = this.findRealPosition();
+		var oldState = this.state
+		if (real.containsCoordinate(x,y)) {
+			if ((this._isDown) && (this.onClickHandler != null))
+				this.onClickHandler.buttonClicked(this)
+			this.state = SLL_BUTTON_STATES.OVER;
+		} else {
+			this.state = SLL_BUTTON_STATES.UP;
+		}
+
 		this._isDown = false;
-		this.state = SLL_BUTTON_STATES.OVER;
-		return true;
+		return oldState != this.state;
 	}
 
+	setClickHanlder(handler) {
+		this.onClickHandler = handler;
+	}
+	
 	setColor(state, back, txt, txtHighlight, borderTop, borderBot) {
 		this.colorSet[state][SLL_BUTTON_COLOR.BACK] = back;
 		this.colorSet[state][SLL_BUTTON_COLOR.TEXT] = txt;
@@ -160,8 +175,10 @@ class SLLImageButton extends SLLTextButton {
 		var borderedRect = new SLLRectangle(rect.x-border, rect.y-border, 
 				rect.width+2*border, rect.height+2*border);
 		super(lid, borderedRect, "", border);
+		this.removeChild(this.message);
 		this.img = new SLLImageLayer("img", img, rect);
 		this.img.moveTo(border,border);
 		this.addChild(this.img);
+		this.addChild(this.message);
 	}
 }
