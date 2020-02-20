@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>SLLLayers Test</title>
+</head>
+<body onLoad='init()'>
+<canvas id='game' width="640" height="480" onMouseDown="mouseDown(event)" onMouseUp="mouseUp(event)" onMouseMove="mouseMove(event)">Canvas not supported by your browser</canvas>
+<p>&nbsp;</p>
+
+<script src="sll.js"></script>
+<script src="sll_gui.js"></script>
+<script language="javascript">
+var stage;
+var canvasRect = new SLLRectangle(0,0,640,480);
+
+function canvasMouseCoordsFromEvent(event)
+{
+	var canvas = document.getElementById('game');
+
+	var ox = event.offsetX;
+	if (ox == undefined)
+		ox = event.pageX-canvas.offsetLeft;
+	var oy = event.offsetY;
+	if (oy == undefined)
+		oy = event.pageY-canvas.offsetTop;
+	return new SLLPoint(ox, oy);	
+}
+
+function mouseDown(event)
+{
+	if ( !game ) return;
+	isMouseDown = true;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseDown(p.x, p.y))
+		draw();
+}
+
+function mouseMove(event)
+{
+	if ( !game ) return;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseMove(p.x, p.y))
+		draw();
+}
+
+function mouseUp(event)
+{
+	if ( !game ) return;
+	isMouseDown = false;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseUp(p.x, p.y))
+		draw();
+}
+function draw()
+{
+	var canvas = document.getElementById('game');
+	if ( ! canvas.getContext)
+		return;
+	var ctx = canvas.getContext('2d');
+	//stage.renderDirty(ctx);
+	stage.render(ctx, canvasRect);
+}
+
+
+function init()
+{
+	stage = new SLLLayer('stage', 640, 480);
+	stage.setBackgroundColor("#555");
+	
+	button = new SLLTextButton('btn', new SLLRectangle(100,100,400,50), "Hello World!");
+	stage.addChild(button);
+	draw();
+}
+</script>
+</body>
+</html>
