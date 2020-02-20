@@ -146,4 +146,22 @@ class SLLTextButton extends SLLLayer {
 		else if (this.state == SLL_BUTTON_STATES.DISABLED)
 			this.state = SLL_BUTTON_STATES.UP;
 	}
+	
+	setText(txt) {
+		this.message.setText(txt);
+	}
+}
+
+
+// ---------------------------------------------------------------
+
+class SLLImageButton extends SLLTextButton {
+	constructor(lid, img, rect, border = 0) {
+		var borderedRect = new SLLRectangle(rect.x-border, rect.y-border, 
+				rect.width+2*border, rect.height+2*border);
+		super(lid, borderedRect, "", border);
+		this.img = new SLLImageLayer("img", img, rect);
+		this.img.moveTo(border,border);
+		this.addChild(this.img);
+	}
 }

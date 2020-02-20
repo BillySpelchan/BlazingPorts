@@ -11,6 +11,19 @@
 <script src="sll.js"></script>
 <script src="sll_gui.js"></script>
 <script language="javascript">
+var solImg = new Image();
+solImg.src = "engsol.png";
+var imageButtons = {
+"Wood" : {"x" : 708, "y" : 3, "width" : 112, "height" : 55, "offx" : 0, "offy" : 0},
+"RestartUp" : {"x" : 3, "y" : 608, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"RestartOver" : {"x" : 223, "y" : 608, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"RestartDown" : {"x" : 442, "y" : 608, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"ContinueUp" : {"x" : 662, "y" : 608, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"ContinueOver" : {"x" : 3, "y" : 662, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"ContinueDown" : {"x" : 223, "y" : 662, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+"BlankButton" : {"x" : 442, "y" : 662, "width" : 216, "height" : 50, "offx" : -108, "offy" : -25},
+}
+
 var stage;
 var canvasRect = new SLLRectangle(0,0,640,480);
 
@@ -70,6 +83,9 @@ function init()
 	
 	button = new SLLTextButton('btn', new SLLRectangle(100,100,400,50), "Hello World!");
 	stage.addChild(button);
+	woodButton = new SLLImageButton('wood', solImg, imageButtons.Wood, 5);
+	woodButton.moveTo(50,50);
+	stage.addChild(woodButton);
 	draw();
 }
 </script>
