@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>SLLLayers Test</title>
+</head>
+<body onLoad='init()'>
+<canvas id='game' width="640" height="480" onMouseDown="mouseDown(event)" onMouseUp="mouseUp(event)" onMouseMove="mouseMove(event)">Canvas not supported by your browser</canvas>
+<p>&nbsp;</p>
+
+<script src="sll.js"></script>
+<script src="tileMap.js"></script>
+<script language="javascript">
+var stage;
+var canvasRect = new SLLRectangle(0,0,640,480);
+var map, tileLayer, palette;
+
+function canvasMouseCoordsFromEvent(event)
+{
+	var canvas = document.getElementById('game');
+
+	var ox = event.offsetX;
+	if (ox == undefined)
+		ox = event.pageX-canvas.offsetLeft;
+	var oy = event.offsetY;
+	if (oy == undefined)
+		oy = event.pageY-canvas.offsetTop;
+	return new SLLPoint(ox, oy);	
+}
+
+function mouseDown(event)
+{
+	if ( !game ) return;
+	isMouseDown = true;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseDown(p.x, p.y))
+		draw();
+	var pm = tileLayer.convertRealPointToLogicalPoint(p);
+	var tx = Math.floor(pm.x / 32);
+	var ty = Math.floor(pm.y / 32);
+	console.log(`pm = ${pm.x},${pm.y}`);
+	if ((tx >= 0) && (tx < 3) && (ty >= 0) && (ty < 3)) {
+		console.log(`setting tile ${tx},${ty} to ${palette.currentSelected}`);
+		map.setTile(tx, ty, palette.currentSelected);
+		draw();
+	}
+}
+
+function mouseMove(event)
+{
+	if ( !game ) return;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseMove(p.x, p.y))
+		draw();
+}
+
+function mouseUp(event)
+{
+	if ( !game ) return;
+	isMouseDown = false;
+	var p = canvasMouseCoordsFromEvent(event);
+	if (stage.mouseUp(p.x, p.y))
+		draw();
+}
+function draw()
+{
+	var canvas = document.getElementById('game');
+	if ( ! canvas.getContext)
+		return;
+	var ctx = canvas.getContext('2d');
+	//stage.renderDirty(ctx);
+	stage.render(ctx, canvasRect);
+}
+
+
+function init()
+{
+	stage = new SLLLayer('stage', 640, 480);
+	stage.setBackgroundColor("#555");
+	
+	map = new TileMap(3,3)
+	for (cntr = 0; cntr < 9; ++cntr)
+		map.setTile(cntr%3, Math.floor(cntr/3), cntr);
+	tileRenderer = new TileRenderer();
+	tileLayer = new TileMapLayer('tiles', 96,96, map, tileRenderer);
+	tileLayer.moveTo(100,100);
+	tileLayer.adjustPosition(new SLLRectangle(100,100,192,192));
+	stage.addChild(tileLayer);
+	console.log(`tile size is ${tileRenderer.tileSize.width},${tileRenderer.tileSize.height}`);
+	palette = new TilePalette("tilepal", 4,2,tileRenderer,3);
+	stage.addChild(palette);
+	draw();
+}
+</script>
+</body>
+</html>
