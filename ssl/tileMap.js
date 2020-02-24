@@ -211,6 +211,32 @@ class TileRenderer {
 	}
 }
 
+class TileImageRenderer {
+	constructor(img, firstTileClip, rows, cols) {
+		this.img = img;
+		this.tileSize = firstTileClip;
+		this.rows = rows;
+		this.cols = cols;
+	}
+
+	render(ctx, tileID, rect) {
+		ctx.save();
+		var clip = new SLLRectangle();
+		clip.clone(this.tileSize);
+		var r = Math.floor(tileID / this.cols);
+		var c = tileID % this.cols;
+		clip.x = clip.x + c*clip.width;
+		clip.y = clip.y + r*clip.height;
+//		console.log(`ctx.drawImage(this.img, ${clip.x}, ${clip.y}, ${clip.width},${clip.height},
+//				${rect.x}, ${rect.y}, ${rect.width}, ${rect.height});`);
+
+		ctx.drawImage(this.img, clip.x, clip.y, clip.width,clip.height,
+				rect.x, rect.y, rect.width, rect.height);
+		ctx.restore();
+	}
+
+}
+
 class TileMapLayer extends SLLLayer {
 	constructor(id, width, height, tilemap, renderer) {
 		super(id, width, height);

@@ -14,6 +14,9 @@
 var stage;
 var canvasRect = new SLLRectangle(0,0,640,480);
 var map, tileLayer, palette;
+var gameViewport;
+var tileset = new Image();
+tileset.src = "tileset.png";
 
 function canvasMouseCoordsFromEvent(event)
 {
@@ -72,6 +75,13 @@ function draw()
 	stage.render(ctx, canvasRect);
 }
 
+function scrollTest() {
+	gameViewport.viewport.x++;
+	if (gameViewport.viewport.x > 2944)
+		gameViewport.viewport.x = 0;
+	draw()
+	window.requestAnimationFrame(scrollTest);
+}
 
 function init()
 {
@@ -89,7 +99,18 @@ function init()
 	console.log(`tile size is ${tileRenderer.tileSize.width},${tileRenderer.tileSize.height}`);
 	palette = new TilePalette("tilepal", 4,2,tileRenderer,3);
 	stage.addChild(palette);
-	draw();
+
+	gameMap = new TileMap(200,14);
+	for (var r = 0; r < 14; ++r)
+		for (var c = 0; c < 200; ++c)
+			gameMap.setTile(c,r,(c+r)%16);
+	tileImageRenderer = new TileImageRenderer(tileset, new SLLRectangle(0,0,16,16), 1, 16);
+	gameViewport = new TileMapLayer("gameViewport", 16*16, 16*14, gameMap, tileImageRenderer);
+	gameViewport.moveTo(320,10);
+	gameViewport.viewport.x=5;
+	stage.addChild(gameViewport);
+	window.requestAnimationFrame(scrollTest);
+//	draw();
 }
 </script>
 </body>
