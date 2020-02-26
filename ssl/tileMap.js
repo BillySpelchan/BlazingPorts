@@ -305,12 +305,17 @@ class TilePalette extends SLLLayer {
 		this.selectedColor = "#F0F";
 		this.currentSelected = 0;
 		this.currentOver = 0;
+		this.changeHandler = null;
 	}
 	
 	setColors(back, over, selected) {
 		this._backgroundColor = back;
 		this.overColor = "#0FF";
 		this.selectedColor = "#F0F";
+	}
+	
+	setChangeHandler(handler) {
+		this.changeHandler = handler;
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false) {
@@ -320,12 +325,16 @@ class TilePalette extends SLLLayer {
 			ctx.save();
 			var oldFill = ctx.fillStyle;
 
-			var rect = new SLLRectangle(0,0, 
-								this.renderer.tileSize.width + this.gap * 2,
-								this.renderer.tileSize.height + this.gap * 2);
-			var renderRect = new SLLRectangle(this.gap, this.gap, 
-								this.renderer.tileSize.width,
-								this.renderer.tileSize.height);
+			var scaleX = this._realPosition.width / this._logicalSize.width;
+			var scaleY = this._realPosition.height / this._logicalSize.height;
+
+			var rect = new SLLRectangle(this._realPosition.x,this._realPosition.y, 
+								(this.renderer.tileSize.width + this.gap * 2) * scaleX,
+								(this.renderer.tileSize.height + this.gap * 2) * scaleY);
+			var renderRect = new SLLRectangle(this.gap* scaleX, this.gap * scaleY, 
+								this.renderer.tileSize.width * scaleX,
+								this.renderer.tileSize.height * scaleY);
+
 			for (var r = 0; r < this.rows; ++r) {
 				for (var c = 0; c < this.cols; ++c) {
 					var tid = r*this.cols+c;
@@ -334,12 +343,12 @@ class TilePalette extends SLLLayer {
 						color = this.overColor;
 					if (tid == this.currentSelected)
 						color = this.selectedColor;
-					rect.x = c * rect.width;
-					rect.y = r * rect.height;
+					rect.x = this._realPosition.x + c * rect.width;
+					rect.y = this._realPosition.y +r * rect.height;
 					ctx.fillStyle = color;
 					ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
-					renderRect.x = rect.x + this.gap;
-					renderRect.y = rect.y + this.gap;
+					renderRect.x = rect.x + this.gap * scaleX;
+					renderRect.y = rect.y + this.gap * scaleY;
 					this.renderer.render(ctx, tid, renderRect);
 				}
 			}
@@ -371,6 +380,8 @@ class TilePalette extends SLLLayer {
 		if (tileID >= 0) {
 			dirty |= !(this.currentSelected == tileID);
 			this.currentSelected = tileID;
+			if (this.changeHandler != null)
+				this.changeHandler.paletteChanged(this);
 		}
 		
 		return dirty;
@@ -380,11 +391,8 @@ class TilePalette extends SLLLayer {
 	{
 		var dirty = super.mouseMove(x,y);
 		var tileID = this.findTileAtRealCoordinate(x,y);
-		if (tileID >= 0) {
-			dirty |= !(this.currentOver == tileID);
-		}
-		this.currentOver = tileID;
-		
+		dirty |= !(this.currentOver == tileID);
+		this.currentOver = tileID;		
 		return dirty;
 	}
 
