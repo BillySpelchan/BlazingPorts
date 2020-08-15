@@ -1,0 +1,587 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Pent Up Anger</title>
+</head>
+<body onload="init();">
+	<div id="animation_container" style="background-color:rgba(102, 204, 255, 1.00); width:640px; height:480px">
+		<canvas id="canvas" width="640" height="480" style="position: absolute; display: block; background-color:rgba(102, 204, 255, 1.00);"></canvas>
+		<div id="dom_overlay_container" style="pointer-events:none; overflow:hidden; width:640px; height:480px; position: absolute; left: 0px; top: 0px; display: block;">
+		</div>
+	</div>
+
+<h1>Pent Up Anger Instructions</h1>
+<p>This is a HTML5 port of my  Flash version of Pent-up Anger which was originally part of my Flash Game Development eBook that was released on BlazingGames.com. This book is being re-written for HTML5 and is being released on <a href="http://homebrewgamejam.blogspot.com/">http://homebrewgamejam.blogspot.com/</a> for those who are interested in finding out how the game was created. It will be a while until the blog posts reach this chapter so be patient.</p>
+<h3>Playing the Game </h3>
+      <p>Pent up Anger is an original board game that I designed which is loosely based on other board games that I have seen. The game's board is pentagon shaped. Each point of the pentagon is a player's starting location. Each player is assigned a different color and has five playing pieces numbered one through five. Their starting gate also has the numbers one through five on it. </p>
+      <p>Turns revolve clockwise around the board. Players start their turn by rolling an eight sided dice. Before the player can move, they need to get one of their pieces out of the starting gate. This is done by rolling the number that is assigned to the piece. Players can only move or start once piece a turn. Any piece that is on the board can be moved as long as the move will not take the piece past the player's loading zone. If the player lands on an opponent's piece, that piece get's taken back to the starting gate. </p>
+      <p>The loading zone is a special four square line on the board that starts just before the players starting point. Once the player's piece has landed in the loading zone, the piece is able to leave the board. To leave the board, the number of the piece must be rolled. </p>
+      <p>Players win the game once all their pieces have been removed from the board.</p>
+<script src="createjs-2015.11.26.min.js"></script>
+<script src="PentUpAnger.js"></script>
+<script>
+// Global Scripts
+	if (typeof(spelchan) == "undefined") spelchan = {};
+spelchan.tintedButtonEvent = function(e) {
+	e.target.updateCache();
+	console.log ("tint event: " + e.target);
+}
+// --------------
+spelchan.TriState = function(movie, label, playerType) {
+	this.movie = movie;
+	this.movie.label_txt.text = label;
+	this.current_select = playerType;
+	this.box1Listener = this.setSelected.bind(this,1);
+	this.box2Listener = this.setSelected.bind(this,2);
+	this.box3Listener = this.setSelected.bind(this,3);	
+	this.movie.box1_btn.addEventListener("click", this.box1Listener);
+	this.movie.box2_btn.addEventListener("click", this.box2Listener);
+	this.movie.box3_btn.addEventListener("click", this.box3Listener);
+	this.refreshComponent();
+}
+spelchan.TriState.prototype.refreshComponent = function() {
+	console.log("Should be adjusting box state");
+	this.movie.box1_movie.visible = (this.current_select == 1);
+	console.log("box1 = " + this.movie.box1_movie.visible);
+	this.movie.box2_movie.visible = (this.current_select == 2);
+	this.movie.box3_movie.visible = (this.current_select == 3);
+	this.movie.updateCache();
+}
+spelchan.TriState.prototype.setSelected = function(n) {
+	console.log("TriState button selection changed to " + n);
+	this.current_select = n;
+	this.refreshComponent();
+}
+spelchan.TriState.prototype.getSelected = function() {
+	return this.current_select;
+}
+spelchan.TriState.prototype.clearListeners = function() {
+	this.movie.box1_btn.removeEventListener("click", this.box1Listener);
+	this.movie.box2_btn.removeEventListener("click", this.box2Listener);
+	this.movie.box3_btn.removeEventListener("click", this.box3Listener);
+}
+// --------------
+spelchan.Board = function(movie) {
+	this.boardMovie = movie;
+	this.pieces = [
+		[movie.p1, movie.p2, movie.p3, movie.p4, movie.p5],
+		[movie.r1, movie.r2, movie.r3, movie.r4, movie.r5],
+		[movie.y1, movie.y2, movie.y3, movie.y4, movie.y5],
+		[movie.g1, movie.g2, movie.g3, movie.g4, movie.g5],
+		[movie.b1, movie.b2, movie.b3, movie.b4, movie.b5]
+	];
+	this.pieceListeners = [];
+	this.player = 23;
+	for (var cntrPlayer = 0; cntrPlayer < 5; ++cntrPlayer) {
+		this.pieceListeners[cntrPlayer] = [];
+		for (var cntr = 0; cntr < 5; ++cntr) {
+			this.pieces[cntrPlayer][cntr].playerID.text = ""+(cntr+1);
+			this.pieces[cntrPlayer][cntr].useHighlight.visible = false;
+			this.pieces[cntrPlayer][cntr].playerID = cntrPlayer;
+			this.pieces[cntrPlayer][cntr].pieceID = cntr;
+			this.pieceListeners[cntrPlayer][cntr] = this.choosePiece.bind(this, cntrPlayer, cntr);
+			this.pieces[cntrPlayer][cntr].addEventListener("click", this.pieceListeners[cntrPlayer][cntr]);
+		}
+		this.pieces[cntrPlayer][cntrPlayer].useHighlight.visible = true;
+	}
+	var degree = Math.PI / 180;
+	// set up constants for array indexes
+	this.BOARD_START_INDEX = 0;
+	this.BOARD_START_X_INDEX = 1;
+	this.BOARD_START_Y_INDEX = 2;
+	this.BOARD_START_ANGLE_INDEX = 3;
+	this.BOARD_END_INDEX = 4;
+	this.BOARD_END_X_INDEX = 5;
+	this.BOARD_END_Y_INDEX = 6;
+	this.BOARD_END_ANGLE_INDEX = 7;
+	this.BOARD_HOME_INDEX = 8;
+	this.BOARD_HOME_X_INDEX = 9;
+	this.BOARD_HOME_Y_INDEX = 10;
+	this.BOARD_HOME_ANGLE_INDEX = 11;
+	this.BOARD_LOADING_START = 12;
+	this.BOARD_LOADING_END = 13;
+	this.BOARD_LAYOUT = [
+		//si,  sx,  sy, sa, ei,  ex,  ey, ea, hi,  hx,  hy, ha, ls, le
+		[  0, -39,-236,180,  5, -11,-179,270, 50,  -9,-219,324,101,104],
+		[ 10, 231, -84, 90, 15, 169, -48,198, 61, 205, -58,252, 57, 60],
+		[ 20, 151, 212,  0, 25, 101, 162,126, 72, 121, 198,180, 68, 71],
+		[ 30,-175, 212,180, 35,-123, 161, 54, 83,-145, 192,108, 79, 82],
+		[ 40,-254, -42,270, 45,-185, -48,342, 94,-227, -64, 36, 90, 93] 
+	];
+	this.layout_x = new Array(105);
+	this.layout_y = new Array(105);
+	this.layout_piece = new Array(105);
+	for (var cntrcol = 0; cntrcol < 5; ++cntrcol)
+	{
+		for (var cntr = 0; cntr < 5; ++cntr)
+		{
+			this.layout_x[this.BOARD_LAYOUT[cntrcol][this.BOARD_START_INDEX]+cntr] =
+				24 * cntr * Math.cos(this.BOARD_LAYOUT[cntrcol][this.BOARD_START_ANGLE_INDEX] * degree) +
+				this.BOARD_LAYOUT[cntrcol][this.BOARD_START_X_INDEX];
+			this.layout_y[this.BOARD_LAYOUT[cntrcol][this.BOARD_START_INDEX]+cntr] =
+				24 * cntr * -Math.sin(this.BOARD_LAYOUT[cntrcol][this.BOARD_START_ANGLE_INDEX] * degree) +
+				this.BOARD_LAYOUT[cntrcol][this.BOARD_START_Y_INDEX];
+			this.layout_x[this.BOARD_LAYOUT[cntrcol][this.BOARD_END_INDEX]+cntr] =
+					24 * cntr * Math.cos(this.BOARD_LAYOUT[cntrcol][this.BOARD_END_ANGLE_INDEX] * degree) +
+					this.BOARD_LAYOUT[cntrcol][this.BOARD_END_X_INDEX];
+			this.layout_y[this.BOARD_LAYOUT[cntrcol][this.BOARD_END_INDEX]+cntr] =
+					24 * cntr * -Math.sin(this.BOARD_LAYOUT[cntrcol][this.BOARD_END_ANGLE_INDEX] * degree) +
+					this.BOARD_LAYOUT[cntrcol][this.BOARD_END_Y_INDEX];
+		}
+	}
+	for (cntrcol = 0; cntrcol < 5; ++cntrcol)
+	{
+		for (cntr = 0; cntr < 11; ++cntr)
+		{
+			this.layout_x[this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_INDEX]+cntr] =
+					24 * cntr * Math.cos(this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_ANGLE_INDEX] * degree) +
+					this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_X_INDEX];
+			this.layout_y[this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_INDEX]+cntr] =
+					24 * cntr * -Math.sin(this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_ANGLE_INDEX] * degree) +
+					this.BOARD_LAYOUT[cntrcol][this.BOARD_HOME_Y_INDEX];
+		}
+	}
+	this.SPEED = 4;	
+	this.movingPiece == null;
+	this.tickHandler = this.updateMove.bind(this);
+	this.boardMovie.addEventListener("tick", this.tickHandler);
+}
+spelchan.Board.prototype.layoutPieces = function() {
+	var temp;
+	for (var cntrcol = 0; cntrcol < 5; ++cntrcol)
+	{
+		for (var cntr = 0; cntr < 5; ++cntr)
+		{
+			temp = this.BOARD_LAYOUT[cntrcol][this.BOARD_START_INDEX] + cntr;
+			this.pieces[cntrcol][cntr].x = this.layout_x[temp];
+			this.pieces[cntrcol][cntr].y = this.layout_y[temp];
+			this.pieces[cntrcol][cntr].location = temp;
+			console.log("placing piece on " + temp);
+		}
+	}
+	for (cntr = 0; cntr < 105; ++cntr)
+		this.layout_piece[cntr] = null;
+}
+spelchan.Board.prototype.clearActions = function() {
+	for (var cntrcol = 0; cntrcol < 5; ++cntrcol)
+	{
+		for (var cntr = 0; cntr < 5; ++cntr)
+		{
+			this.pieces[cntrcol][cntr].useHighlight.visible = false;
+		}
+	}	
+}
+spelchan.Board.prototype.prepareMove = function(player, roll, listener) {
+	var moveCount, cntr, loc, zonedist;
+	this.lastRoll = roll;
+	this.clearActions();
+	this.move_listener = listener;
+	var home = this.BOARD_LAYOUT[player][this.BOARD_HOME_INDEX];
+	var start = this.BOARD_LAYOUT[player][this.BOARD_START_INDEX];
+	var end = this.BOARD_LAYOUT[player][this.BOARD_END_INDEX];
+	this.player = player;
+	movecount = 0;
+	for (cntr = 0; cntr < 5; ++cntr)
+	{
+		this.pieces[player][cntr].weight = 0;
+		loc = this.pieces[player][cntr].location;
+		console.log("piece " + cntr + "is at " + loc);
+		zonedist = home - loc;
+		if (zonedist <= 0)
+			zonedist += 55;
+		console.log ("piece " + cntr + " is " + zonedist + " from reaching home");
+		// see if piece can be launched or finished
+		if ((cntr+1) == roll)
+		{
+			if ( (loc == (start+cntr)) || (zonedist < 5) )
+			{
+				console.log("Piece is launchable/exitable");
+				this.pieces[player][cntr].useHighlight.visible = true;
+				if (zonedist < 5)
+					this.pieces[player][cntr].weight = 100;
+				else if (this.layout_piece[home] != player)
+					this.pieces[player][cntr].weight = 90;
+//				pieces[player][cntr].onRelease = choosePiece;
+				++movecount;
+			}
+		}
+		if ( (loc >= 50) && (zonedist > roll) )
+		{
+			console.log("piece movable on board");
+			this.pieces[player][cntr].useHighlight.visible = true;
+			var targetloc = loc + roll;
+			if (targetloc > 104)
+				targetloc -= 55;
+			var targetPiece = this.layout_piece[targetloc];
+			if ((targetPiece == null) || (targetPiece.playerID != player))
+				if (loc == home)
+					this.pieces[player][cntr].weight = 60;
+				else
+					this.pieces[player][cntr].weight = 60-zonedist;
+			++movecount;
+		}
+	}
+	if (listener.playerTypes[player] == 3)
+		this.ai_move(player);
+	else if (movecount == 0)
+		listener.doneMove();
+}
+spelchan.Board.prototype.choosePiece = function(player, piece) {
+	console.log("***choosePiece called***");
+	if (player != this.player) {
+		console.log("Piece does not belong to player! " + player + "!=" + this.player);
+		console.log("speed = " + this.SPEED);
+		return;
+	}
+	console.log ("Piece was selected to be moved: " + player + "," + piece);
+	var loc = this.pieces[player][piece].location;
+	console.log ("Piece was on " + loc);
+	this.clearActions();
+	if (loc == (this.BOARD_LAYOUT[player][this.BOARD_START_INDEX]+piece) )
+		this.movingTargetLoc = this.BOARD_LAYOUT[player][this.BOARD_HOME_INDEX];
+	else if ( (loc >= this.BOARD_LAYOUT[player][this.BOARD_LOADING_START]) &&
+			(loc <= this.BOARD_LAYOUT[player][this.BOARD_LOADING_END]) &&
+			(this.lastRoll == (piece+1)) )
+		this.movingTargetLoc = this.BOARD_LAYOUT[player][this.BOARD_END_INDEX]+piece;
+	else
+	{
+		this.movingTargetLoc = loc + this.lastRoll;
+		if (this.movingTargetLoc > 104)
+			this.movingTargetLoc -= 55;
+	}
+	this.movingPiece = this.pieces[player][piece];
+	this.movingTargetX = this.layout_x[this.movingTargetLoc];
+	this.movingTargetY = this.layout_y[this.movingTargetLoc];
+	this.layout_piece[loc] = null;
+	console.log("Moving from " + loc + " to " + this.movingTargetLoc);
+//	onEnterFrame = updateMove;
+}
+spelchan.Board.prototype.updateMove = function() {
+	if (this.movingPiece == null)
+		return;
+	console.log("moving piece...");
+	var curX = this.movingPiece.x;
+	var curY = this.movingPiece.y;
+	var deltaX = this.movingTargetX - curX;
+	var deltaY = this.movingTargetY - curY;
+	var distance = Math.abs(deltaX) + Math.abs(deltaY);
+	if (distance <= this.SPEED)
+	{ 
+		this.movingPiece.x = this.movingTargetX;
+		this.movingPiece.y = this.movingTargetY;
+//		movingPiece.changeState(0);
+		this.movingPiece.location = this.movingTargetLoc;
+		if (this.layout_piece[this.movingTargetLoc] != null)
+		{
+			var temp = this.layout_piece[this.movingTargetLoc];
+			this.layout_piece[this.movingTargetLoc] = this.movingPiece;
+			this.movingTargetLoc = this.BOARD_LAYOUT[temp.playerID][this.BOARD_START_INDEX]+temp.pieceID;
+			this.movingTargetX = this.layout_x[this.movingTargetLoc];
+			this.movingTargetY = this.layout_y[this.movingTargetLoc];
+			this.movingPiece = temp;
+		}
+		else
+		{
+			this.layout_piece[this.movingTargetLoc] = this.movingPiece;
+			this.movingPiece = null;
+//			onEnterFrame = null;
+			this.move_listener.doneMove();
+		}
+	}
+	else
+	{ 
+		var moveX = deltaX * this.SPEED / distance;
+		var moveY = deltaY * this.SPEED / distance;
+		this.movingPiece.x += moveX;
+		this.movingPiece.y += moveY;
+	}
+}
+spelchan.Board.prototype.checkWin = function(player) {
+	var cntr, result = true;
+	var end = this.BOARD_LAYOUT[player][this.BOARD_END_INDEX];
+	for (cntr = 0; cntr < 5; ++cntr)
+	{
+		if (this.pieces[player][cntr].location != (end + cntr))
+		{
+			result = false;
+			break;
+		}
+	}
+	return result;
+}
+spelchan.Board.prototype.ai_move = function(player) {
+	console.log("ai move called!");
+	var cntr, choice = -1;
+	var best = 0;
+	for (cntr = 0; cntr < 5; ++cntr)
+	{
+		if (this.pieces[player][cntr].weight > best)
+		{
+			choice = cntr;
+			best = this.pieces[player][cntr].weight;
+		}
+	}
+	if (choice == -1)
+		this.move_listener.doneMove();
+	else
+		this.choosePiece(player,choice);
+}
+spelchan.Board.prototype.clearListeners = function() {
+	this.boardMovie.removeEventListener("tick", this.tickHandler);
+	for (var cntrPlayer = 0; cntrPlayer < 5; ++cntrPlayer) {
+		for (var cntr = 0; cntr < 5; ++cntr) {
+			this.pieces[cntrPlayer][cntr].removeEventListener("click", this.pieceListeners[cntrPlayer][cntr]);
+		}
+	}
+	console.log("Board listeners removed!");
+}
+// -------------
+spelchan.Die = function(movie) {
+	this.dieMovie = movie;
+	this.cutoff = 300;
+	this.frameListener = this.handleTick.bind(this);
+	this.clickListener = this.handleClick.bind(this);
+	this.dieMovie.addEventListener("tick", this.frameListener);
+	this.dieMovie.addEventListener("click", this.clickListener);
+	this.rolling = false;
+	this.value = 0;
+	this.rollListener = null;
+}
+spelchan.Die.prototype.handleTick = function(e) {
+	if (this.rolling) {
+		this.dieMovie.gotoAndPlay(Math.floor(Math.random()*17)+1);
+		--this.cutoff;
+		if (this.cutoff <= 0)
+			this.clickListener(null);
+	}
+}
+spelchan.Die.prototype.handleClick = function(e) {
+	if (this.rolling) {
+		this.rolling = false;
+		this.value = Math.floor(Math.random()*8)+1;
+		this.dieMovie.gotoAndStop(this.value);
+		if (this.rollListener != null)
+			this.rollListener.rollResult(this.value);
+	}
+}
+spelchan.Die.prototype.setRollLister = function(listener) {
+	this.rollListener = listener;
+}
+spelchan.Die.prototype.startRoll = function(listener, cutoff) {
+	this.rollListener = listener;
+	this.rolling = true;
+	this.cutoff = cutoff;
+}
+spelchan.Die.prototype.clearListeners = function() {
+	this.dieMovie.removeEventListener("tick", this.frameListener);
+	this.dieMovie.removeEventListener("click", this.clickListener);
+	console.log("Die listeners removed!");
+}
+// -------------
+spelchan.Pent = function() {
+	this.playerTypes = [];
+	for (var cntr = 0; cntr < 5; ++cntr)
+		this.playerTypes[cntr] = 2;
+}
+spelchan.Pent.prototype.registerStage = function(stage) {
+	this.stage = stage;
+}
+spelchan.Pent.prototype.initTitle = function(movie) {
+	this.titleMovie = movie;
+	this.triStates = [];
+	this.triStates[0] = new spelchan.TriState(this.titleMovie.label1_movie, "Purple", this.playerTypes[0]);
+	this.triStates[1] = new spelchan.TriState(this.titleMovie.label2_movie, "Red", this.playerTypes[1]);
+	this.triStates[2] = new spelchan.TriState(this.titleMovie.label3_movie, "Yellow", this.playerTypes[2]);
+	this.triStates[3] = new spelchan.TriState(this.titleMovie.label4_movie, "Green", this.playerTypes[3]);
+	this.triStates[4] = new spelchan.TriState(this.titleMovie.label5_movie, "Blue", this.playerTypes[4]);
+	this.startListener = this.startGame.bind(this);
+	this.titleMovie.start_btn.addEventListener("click", this.startListener);
+	this.titleMovie.stop();
+}
+spelchan.Pent.prototype.startGame = function(e) {
+	var numPlayers = 0;
+	for (var cntr = 0; cntr < 5; ++cntr) {
+		this.playerTypes[cntr] = this.triStates[cntr].getSelected();
+		if (this.playerTypes[cntr] > 1)
+			++numPlayers;
+		this.triStates[cntr].clearListeners();
+	}	
+	if (numPlayers > 1) {
+		this.titleMovie.start_btn.removeEventListener("click", this.startListener);
+		this.stage.gotoAndStop("Game");
+	}
+}
+// *** GAME SCREEN Code ***
+spelchan.Pent.prototype.startGameScreen = function(movie) {
+	this.gameMovie = movie;
+	this.currentPlayer = 0;
+	this.board = new spelchan.Board(movie.board_movie);
+	this.board.layoutPieces();
+	this.die = new spelchan.Die(movie.die_movie);
+	movie.stop();
+	this.rollBtns = [movie.proll_btn, movie.rroll_btn, movie.yroll_btn, movie.groll_btn, movie.broll_btn];
+	this.skipBtns = [movie.pskip_btn, movie.rskip_btn, movie.yskip_btn, movie.gskip_btn, movie.bskip_btn];
+	this.rollHandler = this.startRoll.bind(this);
+	this.skipHandler = this.skip.bind(this);
+	for (var cntr = 0; cntr < 5; ++cntr) {
+		this.rollBtns[cntr].addEventListener("click", this.rollHandler);
+		this.rollBtns[cntr].addEventListener("mousedown", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].addEventListener("pressup", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].addEventListener("rollover", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].addEventListener("rollout", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].addEventListener("click", this.skipHandler);
+		this.skipBtns[cntr].addEventListener("mousedown", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].addEventListener("pressup", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].addEventListener("rollover", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].addEventListener("rollout", spelchan.tintedButtonEvent);		
+	}
+	this.winText = movie.win_txt;
+	this.continueHandler = this.endGame.bind(this);
+	this.continueBtn = movie.continue_btn;
+	this.continueBtn.addEventListener("click", this.continueHandler);
+	this.UI_ROLL = 0;
+	this.UI_SKIP = 1;
+	this.UI_WIN = 2;
+	this.UI_HIDE = 3;
+	this.ROLL_TIME = 50;
+	this.PLAYER_LABELS = ["Purple", "Red", "Yellow", "Green", "Blue"];
+	this.PLAYER_COLORS = ["#8800AA", "#AA0000", "#AAAA00", "#00AA00", "#0000AA"];
+	this.updateGameUI(0, this.UI_ROLL);
+}
+spelchan.Pent.prototype.updateGameUI = function(player, state) {
+	this.winText.visible = false;
+	this.continueBtn.visible = false;
+	// hide all buttons
+	for (var cntr = 0; cntr < 5; ++cntr) {
+		this.rollBtns[cntr].visible = false;
+		this.skipBtns[cntr].visible = false;
+	}
+	// reveal stuff based on state
+	switch (state) {
+		case this.UI_ROLL:
+			this.rollBtns[player].visible = true;
+			if (this.playerTypes[player] > 2)
+				this.startRoll();
+			else if (this.playerTypes[player] < 2)
+				this.skip();
+			break;
+		case this.UI_SKIP:
+			this.skipBtns[player].visible = true;
+			break;
+		case this.UI_WIN:
+			this.winText.color = this.PLAYER_COLORS[this.currentPlayer];
+			this.winText.text = this.PLAYER_LABELS[this.currentPlayer] + "\nPlayer\nWINS!";
+			this.winText.visible = true;
+			this.continueBtn.visible = true;
+			break;
+	}
+}
+spelchan.Pent.prototype.startRoll = function() {
+	this.die.startRoll(this, this.ROLL_TIME);
+	this.updateGameUI(this.currentPlayer, this.UI_HIDE);
+}
+spelchan.Pent.prototype.rollResult = function(n) {
+	this.updateGameUI(this.currentPlayer, this.UI_SKIP);
+	console.log("the roll was " + n);
+	this.board.prepareMove(this.currentPlayer, n, this);
+}
+spelchan.Pent.prototype.skip = function() {
+	this.doneMove();
+}
+spelchan.Pent.prototype.doneMove = function() {
+	if (this.board.checkWin(this.currentPlayer) == true) {
+		this.updateGameUI(this.currentPlayer, this.UI_WIN);
+		return;
+	}
+	this.currentPlayer = (this.currentPlayer + 1) % 5;
+	this.updateGameUI(this.currentPlayer, this.UI_ROLL);
+}
+spelchan.Pent.prototype.endGame = function() {
+	for (var cntr = 0; cntr < 5; ++cntr) {
+		this.rollBtns[cntr].removeEventListener("click", this.rollHandler);
+		this.rollBtns[cntr].removeEventListener("mousedown", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].removeEventListener("pressup", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].removeEventListener("rollover", spelchan.tintedButtonEvent);
+		this.rollBtns[cntr].removeEventListener("rollout", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].removeEventListener("click", this.skipHandler);
+		this.skipBtns[cntr].removeEventListener("mousedown", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].removeEventListener("pressup", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].removeEventListener("rollover", spelchan.tintedButtonEvent);
+		this.skipBtns[cntr].removeEventListener("rollout", spelchan.tintedButtonEvent);		
+	}
+	this.continueBtn.removeEventListener("click", this.continueHandler);
+	this.board.clearListeners();
+	this.die.clearListeners();
+	this.stage.gotoAndPlay("Title");
+}
+// -------------------------------
+var pent = new spelchan.Pent();</script>
+<script>
+var canvas, stage, exportRoot, anim_container, dom_overlay_container, fnStartAnimation;
+function init() {
+	canvas = document.getElementById("canvas");
+	anim_container = document.getElementById("animation_container");
+	dom_overlay_container = document.getElementById("dom_overlay_container");
+	var comp=AdobeAn.getComposition("33B13E827245614EA1BFE631BB7766D4");
+	var lib=comp.getLibrary();
+	handleComplete({},comp);
+}
+function handleComplete(evt,comp) {
+	//This function is always called, irrespective of the content. You can use the variable "stage" after it is created in token create_stage.
+	var lib=comp.getLibrary();
+	var ss=comp.getSpriteSheet();
+	exportRoot = new lib.PentUpAnger();
+	stage = new lib.Stage(canvas);
+	stage.enableMouseOver();	
+	//Registers the "tick" event listener.
+	fnStartAnimation = function() {
+		stage.addChild(exportRoot);
+		createjs.Ticker.setFPS(lib.properties.fps);
+		createjs.Ticker.addEventListener("tick", stage);
+	}	    
+	//Code to support hidpi screens and responsive scaling.
+	function makeResponsive(isResp, respDim, isScale, scaleType) {		
+		var lastW, lastH, lastS=1;		
+		window.addEventListener('resize', resizeCanvas);		
+		resizeCanvas();		
+		function resizeCanvas() {			
+			var w = lib.properties.width, h = lib.properties.height;			
+			var iw = window.innerWidth, ih=window.innerHeight;			
+			var pRatio = window.devicePixelRatio || 1, xRatio=iw/w, yRatio=ih/h, sRatio=1;			
+			if(isResp) {                
+				if((respDim=='width'&&lastW==iw) || (respDim=='height'&&lastH==ih)) {                    
+					sRatio = lastS;                
+				}				
+				else if(!isScale) {					
+					if(iw<w || ih<h)						
+						sRatio = Math.min(xRatio, yRatio);				
+				}				
+				else if(scaleType==1) {					
+					sRatio = Math.min(xRatio, yRatio);				
+				}				
+				else if(scaleType==2) {					
+					sRatio = Math.max(xRatio, yRatio);				
+				}			
+			}			
+			canvas.width = w*pRatio*sRatio;			
+			canvas.height = h*pRatio*sRatio;
+			canvas.style.width = dom_overlay_container.style.width = anim_container.style.width =  w*sRatio+'px';				
+			canvas.style.height = anim_container.style.height = dom_overlay_container.style.height = h*sRatio+'px';
+			stage.scaleX = pRatio*sRatio;			
+			stage.scaleY = pRatio*sRatio;			
+			lastW = iw; lastH = ih; lastS = sRatio;            
+			stage.tickOnUpdate = false;            
+			stage.update();            
+			stage.tickOnUpdate = true;		
+		}
+	}
+	makeResponsive(false,'both',false,1);	
+	AdobeAn.compositionLoaded(lib.properties.id);
+	fnStartAnimation();
+}
+</script>
+
+</p>
+</body>
+</html>
