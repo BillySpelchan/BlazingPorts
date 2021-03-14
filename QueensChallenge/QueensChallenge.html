@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Queen's Challenge</title>
+</head>
+<body onLoad='init()'>
+<canvas id='game' width="640" height="480" onMouseDown="mouseDown(event)" onMouseUp="mouseUp(event)" onMouseMove="mouseMove(event)">Canvas not supported by your browser</canvas>
+<noscript>This game is written in JavaScript which you do not have enabled. Enable JavaScript to play.</noscript>
+<h2>Queen's Challenge</h2>
+<p>This is a port of an older Flash game that I created. </p>
+
+<script src="../ssl/sll.js"></script>
+<script src="../ssl/sll_gui.js"></script>
+<script src="QueensChallenge.js"></script>
+<script>
+    let stage;
+    let lastUpdate = Date.now();
+    let isMouseDown = false;
+
+    function canvasMouseCoordsFromEvent(event)
+    {
+        let canvas = document.getElementById('game');
+
+        let ox = event.offsetX;
+        if (ox === undefined)
+            ox = event.pageX-canvas.offsetLeft;
+        let oy = event.offsetY;
+        if (oy === undefined)
+            oy = event.pageY-canvas.offsetTop;
+        return new SLLPoint(ox, oy);
+    }
+
+    function mouseDown(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = true;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseDown(p.x, p.y))
+            draw();
+    }
+
+    function mouseMove(event)
+    {
+        if ( !stage ) return;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseMove(p.x, p.y))
+            draw();
+    }
+
+    function mouseUp(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = false;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseUp(p.x, p.y))
+            draw();
+    }
+
+    function draw()
+    {
+        let canvas = document.getElementById('game');
+        if ( ! canvas.getContext)
+            return;
+        let ctx = canvas.getContext('2d');
+//        ctx.drawImage(backdrop,0,0);
+//        drawHintMap(ctx);
+//        for (let r = 0; r< 8; ++r)
+//            for (let c = 0; c< 8; ++c)
+//                ctx.drawImage(playerQueen, QC.boardOffsetX+c*QC.tileSize, QC.boardOffsetY+r*QC.tileSize);
+        stage.render(ctx, QC.canvasRect);
+    }
+
+    function enterFrame() {
+        let newTime = Date.now();
+        if (stage.tick(newTime - lastUpdate))
+            draw();
+        lastUpdate = newTime;
+        window.requestAnimationFrame(enterFrame);
+    }
+
+    function init()
+    {
+        stage = new QCGame();
+        draw();
+//        window.requestAnimationFrame(enterFrame);
+    }
+
+
+</script>
+</body>
+</html>

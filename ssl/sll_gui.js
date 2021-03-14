@@ -33,6 +33,7 @@ class SLLTextButton extends SLLLayer {
 		this.state = SLL_BUTTON_STATES.UP;
 		this._isDown = false;
 		this.onClickHandler = null;
+		this.moveTo(rect.x, rect.y);
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false)
