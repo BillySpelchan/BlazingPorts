@@ -84,7 +84,7 @@ class BaseSolver {
             let nextPos = this.moveable[i] + 1;
             if (nextPos === this.locked)
                 ++nextPos;
-            if (nextPos < (57+i)) {
+            if (nextPos <= (57+i)) {
                 pieceToMove = i;
                 this.moveable[i] = nextPos;
                 break;
@@ -102,6 +102,41 @@ class BaseSolver {
 
 // =====================================================
 
+class RowBruteSolver extends BaseSolver {
+    constructor(game) {
+        super(game);
+    }
+
+    reset() {
+        this.locked = this.game.queens[0].y * 8 + this.game.queens[0].x;
+        let lockedRow = this.game.queens[0].y
+        let spot = 0;
+        for (let i = 0; i < 7; ++i) {
+            if (i === lockedRow)
+                spot += 8;
+            this.moveable[i] = spot;
+            spot += 8;
+        }
+    }
+
+    nextMove() {
+        let pieceToMove = 0;
+        for (let i = 6; i >= 0; --i) {
+            let nextPos = this.moveable[i] + 1;
+            if ((nextPos % 8) > 0) {
+                pieceToMove = i;
+                this.moveable[i] = nextPos;
+                break;
+            }
+        }
+        for (let i = pieceToMove+1; i < 7; ++i) {
+            this.moveable[i] = Math.floor(this.moveable[i] / 8)*8;
+        }
+    }
+}
+
+// =====================================================
+
 class QCGame extends SLLLayer {
     constructor() {
         super("game", 640, 480);
@@ -109,6 +144,18 @@ class QCGame extends SLLLayer {
         this.highlightTile = new SLLLayer("highlight", QC.tileSize, QC.tileSize);
         this.addChild(this.backdrop);
         this.addChild(this.highlightTile);
+
+        this.boardHighlights = [];
+        for (let i = 0; i < 8; ++i) {
+            for (let j = 0; j < 8; ++j) {
+                let highlight = new SLLLayer("h"+i+"_"+j, QC.tileSize, QC.tileSize);
+                highlight.moveTo(QC.boardOffsetX + j * QC.tileSize,
+                QC.boardOffsetY + i * QC.tileSize);
+                highlight.setVisible(false);
+                this.boardHighlights.push(highlight);
+                this.addChild(highlight);
+            }
+        }
         this.queens = [];
         for (let i = 0; i < 8; ++i) {
             let q = new Queen(0,0,false);
@@ -143,8 +190,8 @@ class QCGame extends SLLLayer {
         this.solveLinesButton= new SLLTextButton("bruteLine",
             new SLLRectangle(530,240,100,30),
             "Brute Lines", 3);
-        this.solveLinesButton.setDisabled(true);
-        //this.solveLinesButton.setClickHandler(this);
+        //this.solveLinesButton.setDisabled(true);
+        this.solveLinesButton.setClickHandler(this);
         this.addChild(this.solveLinesButton);
 
         this.solveBacktrackButton= new SLLTextButton("Backtrack",
@@ -170,7 +217,7 @@ class QCGame extends SLLLayer {
 
         this.copyright = new SLLTextLayer("copyright",
             new SLLRectangle(0,450,640,30),
-            "Copyright © 2020 Billy D. Spelchan. Some Rights Reserved.");
+            "Copyright © 2020,2021 Billy D. Spelchan. Some Rights Reserved.");
         this.copyright.setFont(16,"sans-serif", false, true, true, false);
         this.copyright.setAlignment("center");
         this.addChild(this.copyright);
@@ -188,7 +235,11 @@ class QCGame extends SLLLayer {
     }
 
     buttonClicked(src) {
+        this.clearBoardHighlights();
+        if ((src === this.undoButton) && (this.solver))
+            src = this.restartGameButton;
         if (src === this.undoButton) {
+            this.solver = null;
             let indx = 1;
             while ((this.queens[indx]._visible) &&
             (indx < this.queens.length))
@@ -199,10 +250,13 @@ class QCGame extends SLLLayer {
         } else if (src === this.newGameButton) {
             this.startGame();
         } else if (src === this.restartGameButton) {
+            this.solver = null;
             for (let i = 1; i < this.queens.length; ++i)
                 this.queens[i].setVisible(false);
         } else if (src === this.solveBruteButton) {
             this.startSolver(new BaseSolver(this));
+        } else if (src === this.solveLinesButton) {
+            this.startSolver(new RowBruteSolver(this));
         }
     }
 
@@ -221,6 +275,8 @@ class QCGame extends SLLLayer {
         let tileX = Math.floor((x - QC.boardOffsetX) / QC.tileSize);
         let tileY = Math.floor((y - QC.boardOffsetY) / QC.tileSize);
         let valid = ( (tileX >= 0 ) && (tileX <= 7) && (tileY >= 0 ) && (tileY <= 7) )
+        if (this.solver)
+            valid = false;
         if ((valid) && (this.canEnterTile(tileX, tileY))) {
             //find index of next free tile
             let indx = 1;
@@ -254,6 +310,7 @@ class QCGame extends SLLLayer {
     }
 
     startGame() {
+        this.solver = null;
         for (let i = 1; i < this.queens.length; ++i) {
             this.queens[i].setVisible(false);
         }
@@ -270,22 +327,37 @@ class QCGame extends SLLLayer {
         setTimeout(this.nextSolverStep.bind(this), 10);
     }
 
+    clearBoardHighlights() {
+        for (let i = 0; i < 64; ++i)
+            this.boardHighlights[i].setVisible(false);
+    }
+
     isBoardSolved() {
+        this.clearBoardHighlights();
         let solved = true;
         for (let q = 1; q < 8; ++q) {
             let queen = this.queens[q];
             for (let i = 0; i < q; ++i)
-               if (this.queens[i].isCoordinateBlocked(queen.x, queen.y))
+               if (this.queens[i].isCoordinateBlocked(queen.x, queen.y)) {
                    solved = false;
+                   let tid = queen.x + queen.y * 8;
+                   this.boardHighlights[tid].setBackgroundColor("#800");
+                   this.boardHighlights[tid].setVisible(true);
+                   tid = this.queens[i].x + this.queens[i].y * 8;
+                   this.boardHighlights[tid].setBackgroundColor("#800");
+                   this.boardHighlights[tid].setVisible(true);
+               }
         }
         return solved;
     }
 
     nextSolverStep() {
+        if (this.solver == null)
+            return;
         this.solver.placeStepOnBoard();
         if ( ! this.isBoardSolved()) {
             this.solver.nextMove();
-            setTimeout(this.nextSolverStep.bind(this), 250);
+            setTimeout(this.nextSolverStep.bind(this), 50);
         }
         draw();
     }
