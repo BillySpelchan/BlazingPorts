@@ -72,7 +72,7 @@ class BaseSolver {
         for (let i = 0; i < 7; ++i) {
             let qx = this.moveable[i] % 8;
             let qy = Math.floor(this.moveable[i] / 8);
-            console.log(`placing ${i} at ${qx},${qy}`);
+            //console.log(`placing ${i} at ${qx},${qy}`);
             this.game.queens[i+1].changePosition(qx,qy);
             this.game.queens[i+1].setVisible(true);
         }
@@ -137,6 +137,58 @@ class RowBruteSolver extends BaseSolver {
 
 // =====================================================
 
+class BacktrackSolver extends BaseSolver {
+    constructor(game) {
+        super(game);
+        this.depth = 0;
+    }
+
+    reset() {
+        this.locked = this.game.queens[0].y * 8 + this.game.queens[0].x;
+        let lockedRow = this.game.queens[0].y;
+        if (lockedRow === 0)
+            this.moveable[0] = 8;
+        else
+            this.moveable[0] = 0;
+        this.depth = 0;
+        this.placeStepOnBoard();
+    }
+
+    placeStepOnBoard() {
+        super.placeStepOnBoard();
+        for (let i = this.depth+1; i < 7; ++i)
+            this.game.queens[i+1].setVisible(false);
+    }
+
+    nextMove() {
+        let moved = false;
+        let backtrack = false;
+        while ( ! moved) {
+            let queen = this.game.queens[this.depth+1];
+            queen.setVisible(false);
+            if ((!backtrack) && (this.game.canEnterTile(queen.x, queen.y))) {
+                // spawn next depth
+                ++this.depth;
+                let lockedRow = this.game.queens[0].y;
+                this.moveable[this.depth] = (queen.y+1) * 8;
+                if ((queen.y+1) === lockedRow)
+                    this.moveable[this.depth] += 8;
+                moved = true;
+            } else {
+                if (queen.x < 7) {
+                    this.moveable[this.depth] += 1;
+                    moved = true;
+                } else {
+                    backtrack = true;
+                    --this.depth;
+                }
+            }
+        }
+    }
+}
+
+// =====================================================
+
 class QCGame extends SLLLayer {
     constructor() {
         super("game", 640, 480);
@@ -190,15 +242,13 @@ class QCGame extends SLLLayer {
         this.solveLinesButton= new SLLTextButton("bruteLine",
             new SLLRectangle(530,240,100,30),
             "Brute Lines", 3);
-        //this.solveLinesButton.setDisabled(true);
         this.solveLinesButton.setClickHandler(this);
         this.addChild(this.solveLinesButton);
 
         this.solveBacktrackButton= new SLLTextButton("Backtrack",
             new SLLRectangle(530,280,100,30),
             "Backtrack", 3);
-        this.solveBacktrackButton.setDisabled(true);
-        //this.solveBacktrackButton.setClickHandler(this);
+        this.solveBacktrackButton.setClickHandler(this);
         this.addChild(this.solveBacktrackButton);
 
         this.solveConstraintsButton= new SLLTextButton("brute",
@@ -231,6 +281,7 @@ class QCGame extends SLLLayer {
         this.gameWon.setColor("#80A", "#305")
         this.addChild(this.gameWon);
 
+        this.testValue = 0;
         this.startGame();
     }
 
@@ -257,7 +308,8 @@ class QCGame extends SLLLayer {
             this.startSolver(new BaseSolver(this));
         } else if (src === this.solveLinesButton) {
             this.startSolver(new RowBruteSolver(this));
-        }
+        } else if (src === this.solveBacktrackButton)
+            this.startSolver(new BacktrackSolver(this));
     }
 
     canEnterTile(tileX,tileY) {
@@ -315,6 +367,8 @@ class QCGame extends SLLLayer {
             this.queens[i].setVisible(false);
         }
         this.queens[0].changePosition(Math.floor(Math.random()*8),Math.floor(Math.random()*8));
+//        this.queens[0].changePosition(Math.floor(this.testValue%8),Math.floor(this.testValue/8));
+//        this.testValue = (this.testValue+1) & 63;
         this.queens[0].setLocked(true);
         this.queens[0].setVisible(true);
         this.gameWon.setVisible(false);
@@ -337,16 +391,19 @@ class QCGame extends SLLLayer {
         let solved = true;
         for (let q = 1; q < 8; ++q) {
             let queen = this.queens[q];
-            for (let i = 0; i < q; ++i)
-               if (this.queens[i].isCoordinateBlocked(queen.x, queen.y)) {
-                   solved = false;
-                   let tid = queen.x + queen.y * 8;
-                   this.boardHighlights[tid].setBackgroundColor("#800");
-                   this.boardHighlights[tid].setVisible(true);
-                   tid = this.queens[i].x + this.queens[i].y * 8;
-                   this.boardHighlights[tid].setBackgroundColor("#800");
-                   this.boardHighlights[tid].setVisible(true);
-               }
+            if (queen._visible) {
+                for (let i = 0; i < q; ++i)
+                    if (this.queens[i].isCoordinateBlocked(queen.x, queen.y)) {
+                        solved = false;
+                        let tid = queen.x + queen.y * 8;
+                        this.boardHighlights[tid].setBackgroundColor("#800");
+                        this.boardHighlights[tid].setVisible(true);
+                        tid = this.queens[i].x + this.queens[i].y * 8;
+                        this.boardHighlights[tid].setBackgroundColor("#800");
+                        this.boardHighlights[tid].setVisible(true);
+                    }
+            } else
+                solved = false;
         }
         return solved;
     }
@@ -357,7 +414,7 @@ class QCGame extends SLLLayer {
         this.solver.placeStepOnBoard();
         if ( ! this.isBoardSolved()) {
             this.solver.nextMove();
-            setTimeout(this.nextSolverStep.bind(this), 50);
+            setTimeout(this.nextSolverStep.bind(this), 100);
         }
         draw();
     }
