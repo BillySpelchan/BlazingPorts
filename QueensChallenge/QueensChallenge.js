@@ -189,6 +189,122 @@ class BacktrackSolver extends BaseSolver {
 
 // =====================================================
 
+class ForwardSolver extends BaseSolver {
+    constructor(game) {
+        super(game);
+        this.depth = 0;
+        this.domains = [];
+        for (let y = 0; y < 8; ++y) {
+            let row = [];
+            for (let x = 0; x < 8; ++x) {
+                row.push(-1);
+            }
+            this.domains.push(row);
+        }
+    }
+
+    placeStepOnBoard() {
+        super.placeStepOnBoard();
+        for (let i = this.depth; i < 7; ++i)
+            this.game.queens[i+1].setVisible(false);
+    }
+
+    reset() {
+        this.locked = this.game.queens[0].y * 8 + this.game.queens[0].x;
+        for (let y = 0; y < 8; ++y) {
+            let d = y === this.game.queens[0].y ? 0 : -1;
+            for (let x = 0; x < 8; ++x) {
+                this.domains[y][x] = d;
+            }
+        }
+        this.depth = -1;
+        this.updateDomains(this.game.queens[0].x, this.game.queens[0].y);
+        this.depth = 0;
+        this.placeStepOnBoard();
+    }
+
+    updateDomains(qx,qy) {
+        // remove invalid moves from domain by marking with level
+        let domainLevel = (this.depth < 0) ? 0 : this.depth;
+
+        for (let y = domainLevel; y < 8; ++y) {
+            if (this.domains[y][qx] < 0)
+                this.domains[y][qx] = domainLevel;
+            let dx1 = qx + y - qy;
+            let dx2 = qx -y + qy;
+            if ((dx1 >= 0) && (dx1 < 8) && (this.domains[y][dx1] < 0))
+                this.domains[y][dx1] = domainLevel;
+            if ((dx2 >= 0) && (dx2 < 8) && (this.domains[y][dx2] < 0))
+                this.domains[y][dx2] = domainLevel;
+        }
+
+        // see if remaining rows still valid
+        let row = domainLevel;
+        let needToBacktrack = false;
+        if (row >= this.game.queens[0].y)
+            ++row
+        for (let i = domainLevel; i < 7; ++i) {
+            if (row === this.game.queens[0].y)
+                ++row;
+            let move = false;
+            for (let c = 0; c < 8; ++c) {
+                if (this.domains[row][c] < 0) {
+                    move = true;
+                    break;
+                }
+            }
+            if ( ! move) {
+                needToBacktrack = true;
+                break;
+            }
+            ++row;
+        }
+        if (needToBacktrack)
+            this.backTrack();
+    }
+
+    backTrack() {
+        for (let y = this.depth; y < 8; ++y) {
+            for (let x = 0; x < 8; ++x) {
+                if (this.domains[y][x] >= this.depth)
+                    this.domains[y][x] = -1;
+            }
+        }
+        --this.depth;
+    }
+
+    nextMove() {
+        let row = this.depth;
+        if (this.game.queens[0].y <= row)
+            ++row;
+        let moved = false;
+        for (let c = 0; c < 8; ++c) {
+            if (this.domains[row][c] < 0) {
+                this.moveable[this.depth] = row*8+c;
+                this.domains[row][c] = this.depth;
+                ++this.depth;
+                this.updateDomains(c, row);
+                moved = true;
+                break;
+            }
+        }
+        if (!moved)
+            this.backTrack();
+        // show domains
+        for (let y = 0; y < 8; ++y) {
+            for (let x = 0; x < 8; ++x) {
+                if (this.domains[y][x] === -1) {
+                    this.game.boardHighlights[y * 8 + x].setBackgroundColor("rgba(0,0,128,.5)");
+                    this.game.boardHighlights[y * 8 + x].setVisible(true);
+                }
+            }
+        }
+
+    }
+}
+
+// =====================================================
+
 class QCGame extends SLLLayer {
     constructor() {
         super("game", 640, 480);
@@ -216,6 +332,13 @@ class QCGame extends SLLLayer {
             this.queens.push(q);
         }
 
+        this.gameplayLabel = new SLLTextLayer("gpl",
+            new SLLRectangle(5,230,100,30),
+            "Game play");
+        this.gameplayLabel.setFont(20,"sans-serif", true, false, true, true);
+        this.gameplayLabel.setAlignment("center");
+        this.addChild(this.gameplayLabel);
+
         this.undoButton = new SLLTextButton("undo",
             new SLLRectangle(5,300,100,30),
             "Undo", 3);
@@ -234,29 +357,36 @@ class QCGame extends SLLLayer {
         this.restartGameButton.setClickHandler(this);
         this.addChild(this.restartGameButton);
 
+
+        this.solversLabel = new SLLTextLayer("sl",
+            new SLLRectangle(530,230,100,30),
+            "Solvers");
+        this.solversLabel.setFont(20,"sans-serif", true, false, true, true);
+        this.solversLabel.setAlignment("center");
+        this.addChild(this.solversLabel);
+
         this.solveBruteButton= new SLLTextButton("brute",
-            new SLLRectangle(530,200,100,30),
+            new SLLRectangle(530,260,100,30),
             "Brute force", 3);
         this.solveBruteButton.setClickHandler(this);
         this.addChild(this.solveBruteButton);
         this.solveLinesButton= new SLLTextButton("bruteLine",
-            new SLLRectangle(530,240,100,30),
+            new SLLRectangle(530,300,100,30),
             "Brute Lines", 3);
         this.solveLinesButton.setClickHandler(this);
         this.addChild(this.solveLinesButton);
 
         this.solveBacktrackButton= new SLLTextButton("Backtrack",
-            new SLLRectangle(530,280,100,30),
+            new SLLRectangle(530,340,100,30),
             "Backtrack", 3);
         this.solveBacktrackButton.setClickHandler(this);
         this.addChild(this.solveBacktrackButton);
 
-        this.solveConstraintsButton= new SLLTextButton("brute",
-            new SLLRectangle(530,320,100,30),
+        this.solveForwardButton= new SLLTextButton("Forward",
+            new SLLRectangle(530,380,100,30),
             "Forward", 3);
-        this.solveConstraintsButton.setDisabled(true);
-        //this.solveConstraintsButton.setClickHandler(this);
-        this.addChild(this.solveConstraintsButton);
+        this.solveForwardButton.setClickHandler(this);
+        this.addChild(this.solveForwardButton);
 
         this.title = new SLLTextLayer("title",
             new SLLRectangle(0,5,640,50),
@@ -295,7 +425,6 @@ class QCGame extends SLLLayer {
             while ((this.queens[indx]._visible) &&
             (indx < this.queens.length))
                 ++indx;
-            console.log("Should remove queen " + indx);
             if (indx > 1)
                 this.queens[indx-1].setVisible(false);
         } else if (src === this.newGameButton) {
@@ -310,6 +439,8 @@ class QCGame extends SLLLayer {
             this.startSolver(new RowBruteSolver(this));
         } else if (src === this.solveBacktrackButton)
             this.startSolver(new BacktrackSolver(this));
+        else if (src === this.solveForwardButton)
+            this.startSolver(new ForwardSolver(this));
     }
 
     canEnterTile(tileX,tileY) {
@@ -366,6 +497,7 @@ class QCGame extends SLLLayer {
         for (let i = 1; i < this.queens.length; ++i) {
             this.queens[i].setVisible(false);
         }
+        // for testing comment out next line and uncomment following two
         this.queens[0].changePosition(Math.floor(Math.random()*8),Math.floor(Math.random()*8));
 //        this.queens[0].changePosition(Math.floor(this.testValue%8),Math.floor(this.testValue/8));
 //        this.testValue = (this.testValue+1) & 63;
