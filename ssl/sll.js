@@ -49,6 +49,7 @@ class SLLRectangle {
 		this.height = height;
 	}
 
+	// noinspection JSUnusedGlobalSymbols
 	setBounds(x=0,y=0, width=0, height=0) {
 		this.x = x;
 		this.y = y;
@@ -71,8 +72,8 @@ class SLLRectangle {
 	* May either pass a Point object or x and y coordinates
 	*/
 	containsCoordinate(x,y) {
-		var deltaX = x - this.x;
-		var deltaY = y - this.y;
+		let deltaX = x - this.x;
+		let deltaY = y - this.y;
 		return !((deltaX < 0) || (deltaY < 0) || (deltaX >= this.width) || (deltaY >= this.height))
 	}
 	
@@ -81,10 +82,10 @@ class SLLRectangle {
 	}
 
 	containsBounds(x, y, w, h) {
-		var x1 = x;
-		var x2 = x + w - 1;
-		var y1 = y;
-		var y2 = y + h -1;
+		let x1 = x;
+		let x2 = x + w - 1;
+		let y1 = y;
+		let y2 = y + h -1;
 		if (this.containsCoordinate(x1, y1) )
 			if (this.containsCoordinate(x2, y2))
 				return true;
@@ -152,7 +153,7 @@ class SLLLayer {
 		this._solid = true;
 		this._splitable = true;
 		this._backgroundColor = 'rgb(0,0,0)';
-		this._children = new Array();
+		this._children = [];
 		this._visible = true;
 		this._isDirty = true;
 		this._parent = null;
@@ -510,9 +511,9 @@ class SLLTextLayer extends SLLLayer {
 		var scaleX = this._realPosition.width / this._logicalPosition.width;
 		var scaleY = this._realPosition.height / this._logicalPosition.height;
 		var nx = rect.x;
-		if (this.alignment == "center")
+		if (this.alignment === "center")
 			nx = rect.x + Math.floor(rect.width / 2);
-		else if (this.alignment == "right")
+		else if (this.alignment === "right")
 			nx = rect.x + rect.width;
 		ctx.textAlign = this.alignment;
 		var scaleSize = Math.ceil(this.size * scaleY);
@@ -567,3 +568,82 @@ class SLLTextLayer extends SLLLayer {
 }
 // --------------------------------------------------------------------------
 
+class SLLCanvasLayer extends SLLLayer {
+	constructor(sid, w, h) {
+		super(sid, w, h);
+		this.canvas = this.canvas = document.createElement('canvas');
+		this.canvas.width = w;
+		this.canvas.height = h;
+		this.ctx = this.canvas.getContext('2d');
+	}
+
+	drawPolystar(ctx, x, y, inner_length, outer_length, num_points, rot=0, stroke = true, fill = true) {
+		let degs = (2*Math.PI) / (num_points * 2);
+		let ang = rot;
+		let px = Math.cos(ang) * outer_length;
+		let py = Math.sin(ang) * outer_length;
+		ctx.beginPath();
+		ctx.moveTo(px + x, py + y);
+		for (var cntr = 0; cntr < num_points; ++cntr) {
+			ang += degs;
+			px = Math.cos(ang) * inner_length;
+			py = Math.sin(ang) * inner_length;
+			ctx.lineTo(px + x,py + y);
+			ang += degs;
+			px = Math.cos(ang) * outer_length;
+			py = Math.sin(ang) * outer_length;
+			ctx.lineTo(px + x, py + y);
+		}
+		ctx.closePath();
+		if (stroke) ctx.stroke();
+		if (fill) ctx.fill();
+	}
+
+	drawPolygon(ctx, x, y, r, num_points, rot=0, stroke = true, fill = true) {
+		let degs = (2*Math.PI) / num_points;
+		let ang = rot;
+		let px = Math.cos(ang) * r;
+		let py = Math.sin(ang) * r;
+		ctx.beginPath();
+		ctx.moveTo(px + x, py + y);
+		for (let cntr = 0; cntr < num_points; ++cntr) {
+			ang += degs;
+			px = Math.cos(ang) * r;
+			py = Math.sin(ang) * r;
+			ctx.lineTo(px + x, py + y);
+		}
+		ctx.closePath();
+		if (stroke) ctx.stroke();
+		if (fill) ctx.fill();
+	}
+
+	renderCanvas() {
+		this.ctx.clearRect(0,0, this.canvas.width, this.canvas.height);
+		this.ctx.fillStyle="blue";
+		this.ctx.fillRect(0,0, this.canvas.width, this.canvas.height);
+		let r = Math.min(this.canvas.width/4, this.canvas.height/4);
+		this.ctx.fillStyle="purple";
+		this.drawPolygon(this.ctx, r,r,r,11);
+		this.drawPolystar(this.ctx, r*3, r*3, r, r/2, 11);
+	}
+
+	drawSelf(ctx, bounds, drawOutsideBounds = false) {
+		//if (this._visible) {
+			ctx.save();
+			let realRect = this.findRealPosition();
+			let scaleX = realRect.width / this._logicalPosition.width;
+			let scaleY = realRect.height / this._logicalPosition.height;
+			this.renderCanvas();
+			let rect = this._realPosition.getIntersection(bounds);
+			//console.log("drawing after rendered...")
+			ctx.beginPath();
+			ctx.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height,
+				realRect.x, realRect.y, realRect.width, realRect.height);
+			ctx.closePath();
+			ctx.restore();
+		//}
+
+		return bounds;
+	}
+
+}

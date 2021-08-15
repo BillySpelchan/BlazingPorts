@@ -17,6 +17,7 @@ SLL_BUTTON_STATES = {
 class SLLTextButton extends SLLLayer {
 	constructor(lid, rect, message, border = 5) {
 		super(lid, rect.width, rect.height);
+		this.moveTo(rect.x, rect.y);
 		this.border = border;
 		this._backgroundColor = "#008";
 		this.colorSet = [ 	["#008", "#880", "#000", "#00C", "#004"], // up
@@ -33,7 +34,6 @@ class SLLTextButton extends SLLLayer {
 		this.state = SLL_BUTTON_STATES.UP;
 		this._isDown = false;
 		this.onClickHandler = null;
-		this.moveTo(rect.x, rect.y);
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false)
@@ -134,8 +134,9 @@ class SLLTextButton extends SLLLayer {
 		var oldState = this.state
 		if (real.containsCoordinate(x,y)) {
 			if ((this._isDown) && (this.onClickHandler != null))
-				this.onClickHandler.buttonClicked(this)
-			this.state = SLL_BUTTON_STATES.OVER;
+				this.onClickHandler.buttonClicked(this);
+			if (this.state != SLL_BUTTON_STATES.DISABLED)
+				this.state = SLL_BUTTON_STATES.OVER;
 		} else {
 			this.state = SLL_BUTTON_STATES.UP;
 		}
@@ -161,6 +162,7 @@ class SLLTextButton extends SLLLayer {
 			this.state = SLL_BUTTON_STATES.DISABLED;
 		else if (this.state == SLL_BUTTON_STATES.DISABLED)
 			this.state = SLL_BUTTON_STATES.UP;
+		console.log(`button ${this.id} state ${this.state}`);
 	}
 	
 	setText(txt) {
@@ -185,6 +187,8 @@ class SLLImageButton extends SLLTextButton {
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false) {
+//		if (this.id > 400)
+//			console.log(`button ${this.id} state ${this.state}`);
 		if (this.state_clips[this.state] != null)
 			this.img.setClip(this.state_clips[this.state]);
 		if (this.border > 0)

@@ -48,7 +48,7 @@ class TileMap {
 			else if (y < 0) rv = this._outOfBoundsTop; 
 			else rv = this._outOfBoundsBottom;
 		else
-			rv = this._mapData[y][x];
+			rv = this._mapData[Math.floor(y)][Math.floor(x)];
 		return rv;
 	}
 		
@@ -166,7 +166,8 @@ class TileMap {
 		if (nh == -1) clipH = clip.height;
 		for (var cntrY = 0; cntrY < clipH; ++cntrY)
 			for (var cntrX = 0; cntrX < clipW; ++cntrX)
-				this.setTile(x + cntrX, y+cntrY, clip.getTile(cntrX, cntrY));
+				this.setTile(x + cntrX, y+cntrY, clip._mapData[cntrY][cntrX]);
+		this.mapChanged = true;
 	}
 
 	/** Fill the map with a solid block of tiles.
@@ -243,18 +244,37 @@ class TileMapLayer extends SLLLayer {
 		this.tilemap = tilemap;
 		this.renderer = renderer;
 		this.viewport = new SLLRectangle(0,0,width,height);
+		this.lastViewport = new SLLRectangle();
 		this.canvas = null
+		this.sharedMap = false;
 	}
 	
 	renderToOffscreenCanvas() {
+//		console.log("rerendering");
 		if (this.canvas == null)
 			this.canvas = document.createElement('canvas');
 		var ts = this.renderer.tileSize;
-		var cw = this.tilemap.width * ts.width;
-		var ch = this.tilemap.height * ts.height;
-		this.canvas.width = cw;
-		this.canvas.height = ch;
+//		var cw = this.tilemap.width * ts.width;
+//		var ch = this.tilemap.height * ts.height;
+		this.canvas.width = this.viewport.width;//cw;
+		this.canvas.height = this.viewport.height;//ch;
 		var ctx = this.canvas.getContext('2d');
+
+		var rect = new SLLRectangle(0,0, ts.width, ts.height);
+		let startRow = Math.floor(this.viewport.y / ts.height);
+		let endRow = Math.floor((this.viewport.y + this.viewport.height) / ts.height);
+		let startCol = Math.floor(this.viewport.x / ts.width);
+		let endCol = Math.floor((this.viewport.x + this.viewport.width) / ts.width);
+		for (var cntrRow = startRow; cntrRow <= endRow; ++cntrRow) {
+			for (var cntrCol = startCol; cntrCol <= endCol; ++cntrCol) {
+				var tid = this.tilemap.getTile(cntrCol, cntrRow);
+				rect.x = cntrCol * ts.width - this.viewport.x;
+				rect.y = cntrRow * ts.height - this.viewport.y;
+				this.renderer.render(ctx, tid, rect);
+			}
+		}
+		
+/*		
 		var rect = new SLLRectangle(0,0, ts.width, ts.height);
 		for (var cntrRow = 0; cntrRow < this.tilemap.height; ++cntrRow) {
 			for (var cntrCol = 0; cntrCol < this.tilemap.width; ++cntrCol) {
@@ -264,23 +284,31 @@ class TileMapLayer extends SLLLayer {
 				this.renderer.render(ctx, tid, rect);
 			}
 		}
+*/		
 		this.tilemap.mapChanged = false;
 	}
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false) {
-		if (this.findRealPosition().intersects(bounds) == false)
+		if (this.findRealPosition().intersects(bounds) === false)
 			return bounds;
 		if (this._visible) {
 			ctx.save();
 			var realRect = this.findRealPosition();
 			var scaleX = realRect.width / this._logicalPosition.width;
 			var scaleY = realRect.height / this._logicalPosition.height;
-			if ((this.canvas == null) || (this.tilemap.mapChanged))
+			if ( (this.lastViewport.x !== this.viewport.x) || (this.lastViewport.y !== this.viewport.y) ) {
+				this.tilemap.mapChanged = true;
+				this.lastViewport.x = this.viewport.x;
+				this.lastViewport.y = this.viewport.y;
+			}
+			if ((this.canvas == null) || (this.tilemap.mapChanged) || (this.sharedMap) )
 				this.renderToOffscreenCanvas();
 			var rect = this._realPosition.getIntersection(bounds);
 			var offscreenCtx = this.canvas.getContext('2d');
-			ctx.drawImage(this.canvas, this.viewport.x, this.viewport.y, this.viewport.width, this.viewport.height,
+			ctx.drawImage(this.canvas, 0, 0, this.viewport.width, this.viewport.height,
 					realRect.x, realRect.y, realRect.width, realRect.height);
+//			ctx.drawImage(this.canvas, this.viewport.x, this.viewport.y, this.viewport.width, this.viewport.height,
+//					realRect.x, realRect.y, realRect.width, realRect.height);
 //			var data = getImageData(viewport.x, viewport.y, viewport.width, viewport.height);
 			ctx.restore();
 		}
