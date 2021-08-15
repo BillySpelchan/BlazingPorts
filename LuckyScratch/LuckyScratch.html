@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lucky Scratch</title>
+</head>
+<body onLoad='init()'>
+<canvas id='game' width="640" height="480" onMouseDown="mouseDown(event)" onMouseUp="mouseUp(event)" onMouseMove="mouseMove(event)">Canvas not supported by your browser</canvas>
+<noscript>This game is written in JavaScript which you do not have enabled. Enable JavaScript to play.</noscript>
+<h2>Knight's Tour</h2>
+<p>This is a port of an older Flash game that I created. </p>
+
+<script src="../ssl/sll.js"></script>
+<script src="../ssl/sll_gui.js"></script>
+<script src="LuckyScratch.js"></script>
+<script>
+    let stage, resultsScreen, ticketScreen;
+    let isMouseDown = false;
+    let canvasRect = new SLLRectangle(0,0,640,480);
+
+    function canvasMouseCoordsFromEvent(event)
+    {
+        let canvas = document.getElementById('game');
+
+        let ox = event.offsetX;
+        if (ox === undefined)
+            ox = event.pageX-canvas.offsetLeft;
+        let oy = event.offsetY;
+        if (oy === undefined)
+            oy = event.pageY-canvas.offsetTop;
+        return new SLLPoint(ox, oy);
+    }
+
+    function mouseDown(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = true;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseDown(p.x, p.y))
+            draw();
+    }
+
+    function mouseMove(event)
+    {
+        if ( !stage ) return;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseMove(p.x, p.y))
+            draw();
+    }
+
+    function mouseUp(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = false;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseUp(p.x, p.y))
+            draw();
+    }
+
+    function draw()
+    {
+        let canvas = document.getElementById('game');
+        if ( ! canvas.getContext)
+            return;
+        let ctx = canvas.getContext('2d');
+        stage.render(ctx, canvasRect);
+    }
+
+    function init()
+    {
+        resultsScreen = new LSResult("FourLeafClover");
+        ticketScreen = new LSTicket(null);
+        stage = ticketScreen;
+        draw();
+    }
+
+    function showResults(token) {
+        resultsScreen.setToken(token);
+        stage = resultsScreen;
+        draw();
+    }
+
+    function showTicket() {
+        ticketScreen.generateTicket();
+        stage = ticketScreen;
+        draw();
+    }
+
+</script>
+</body>
+</html>
