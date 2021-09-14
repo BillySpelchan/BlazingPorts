@@ -1,4 +1,5 @@
 // SLL_GUI requires SLL
+// noinspection JSUnusedGlobalSymbols
 
 SLL_BUTTON_STATES = {
 	"UP" : 0,
@@ -25,7 +26,7 @@ class SLLTextButton extends SLLLayer {
 							["#800", "#880", "#000", "#400", "#C00"], // down
 							["#555", "#CCC", "#000", "#888", "#222"] ]; // disable
 		
-		var gap = Math.floor(rect.height / 5);
+		let gap = Math.floor(rect.height / 5);
 		this.message = new SLLTextLayer(lid+"_txt", 
 				new SLLRectangle(border,gap, rect.width - border*2, gap*3), message);
 		this.message.setAlignment("center");
@@ -38,26 +39,26 @@ class SLLTextButton extends SLLLayer {
 	
 	drawSelf(ctx, bounds, drawOutsideBounds = false)
 	{
-		if (this.findRealPosition().intersects(bounds) == false)
+		if (this.findRealPosition().intersects(bounds) === false)
 			return bounds;
 		if (this._visible) {
 			this.message.setColor(this.colorSet[this.state][SLL_BUTTON_COLOR.TEXT],
 					this.colorSet[this.state][SLL_BUTTON_COLOR.TEXT_HIGHLIGHT]);
 			// save state and clip to prevent drawing outside bounds
 			ctx.save();
-			var oldFill = ctx.fillStyle;
-			var oldStroke = ctx.strokeStyle;
+			let oldFill = ctx.fillStyle;
+			let oldStroke = ctx.strokeStyle;
 			this.findRealPosition();
-			var rect = this._realPosition.getIntersection(bounds);
+			let rect = this._realPosition.getIntersection(bounds);
 			if ( ! drawOutsideBounds) {
 				ctx.rect(rect.x, rect.y, rect.width, rect.height)
 				ctx.clip();
 			}
 
 			// figure out scaling
-			var scaleX = this._realPosition.width / this._logicalPosition.width;
-			var scaleY = this._realPosition.height / this._logicalPosition.height;
-			var borderSize = Math.ceil(this.border * scaleY);
+			let scaleX = this._realPosition.width / this._logicalPosition.width;
+			let scaleY = this._realPosition.height / this._logicalPosition.height;
+			let borderSize = Math.ceil(this.border * scaleY);
 			
 			// draw button face
 			ctx.fillStyle = this.colorSet[this.state][SLL_BUTTON_COLOR.BACK];
@@ -66,12 +67,12 @@ class SLLTextButton extends SLLLayer {
 					this._realPosition.width - 2*borderSize, 
 					this._realPosition.height - 2*borderSize);
 			// draw bottom border
-			var x1 = this._realPosition.x;
-			var y1 = this._realPosition.y;
-			var x2 = x1 + this._realPosition.width - 1;
-			var y2 = y1 + this._realPosition.height - 1;
+			let x1 = this._realPosition.x;
+			let y1 = this._realPosition.y;
+			let x2 = x1 + this._realPosition.width - 1;
+			let y2 = y1 + this._realPosition.height - 1;
 			ctx.strokeStyle = this.colorSet[this.state][SLL_BUTTON_COLOR.BORDER_BOTTOM];
-			for (var cntr = 0; cntr < borderSize; ++cntr) {
+			for (let cntr = 0; cntr < borderSize; ++cntr) {
 				ctx.beginPath();
 				ctx.moveTo(x1+cntr, y1+cntr);
 				ctx.lineTo(x1+cntr, y2-cntr);
@@ -79,7 +80,7 @@ class SLLTextButton extends SLLLayer {
 				ctx.stroke();
 			}
 			ctx.strokeStyle = this.colorSet[this.state][SLL_BUTTON_COLOR.BORDER_TOP];
-			for (var cntr = 0; cntr < borderSize; ++cntr) {
+			for (let cntr = 0; cntr < borderSize; ++cntr) {
 				ctx.beginPath();
 				ctx.moveTo(x1+cntr, y1+cntr);
 				ctx.lineTo(x2-cntr, y1+cntr);
@@ -97,22 +98,22 @@ class SLLTextButton extends SLLLayer {
 	}
 
 	mouseDown(x, y) {
-		if (this.state == SLL_BUTTON_STATES.DISABLED)
+		if (this.state === SLL_BUTTON_STATES.DISABLED)
 			return false;
-		var real = this.findRealPosition();
-		var oldState = this.state
+		let real = this.findRealPosition();
+		let oldState = this.state
 		if (real.containsCoordinate(x,y)) {
 			this.state = SLL_BUTTON_STATES.DOWN;
 			this._isDown = true;
 		}
-		return this.state != oldState;
+		return this.state !== oldState;
 	}
 	
 	mouseMove(x, y) {
-		if (this.state == SLL_BUTTON_STATES.DISABLED)
+		if (this.state === SLL_BUTTON_STATES.DISABLED)
 			return false;
-		var real = this.findRealPosition();
-		var oldState = this.state
+		let real = this.findRealPosition();
+		let oldState = this.state
 		if (real.containsCoordinate(x,y))
 			if (this._isDown)
 				this.state = SLL_BUTTON_STATES.DOWN;
@@ -124,25 +125,25 @@ class SLLTextButton extends SLLLayer {
 			this.state = SLL_BUTTON_STATES.UP;
 			//this.setBackgroundColor(this.upColors[SLL_BUTTON_COLOR.BACK]);
 		
-		return this.state != oldState;
+		return this.state !== oldState;
 	}
 	
 	mouseUp(x,y) {
-		if (this.state == SLL_BUTTON_STATES.DISABLED)
+		if (this.state === SLL_BUTTON_STATES.DISABLED)
 			return false;
-		var real = this.findRealPosition();
-		var oldState = this.state
+		let real = this.findRealPosition();
+		let oldState = this.state
 		if (real.containsCoordinate(x,y)) {
 			if ((this._isDown) && (this.onClickHandler != null))
 				this.onClickHandler.buttonClicked(this);
-			if (this.state != SLL_BUTTON_STATES.DISABLED)
+			if (this.state !== SLL_BUTTON_STATES.DISABLED)
 				this.state = SLL_BUTTON_STATES.OVER;
 		} else {
 			this.state = SLL_BUTTON_STATES.UP;
 		}
 
 		this._isDown = false;
-		return oldState != this.state;
+		return oldState !== this.state;
 	}
 
 	setClickHandler(handler) {
@@ -160,7 +161,7 @@ class SLLTextButton extends SLLLayer {
 	setDisabled(b) {
 		if (b)
 			this.state = SLL_BUTTON_STATES.DISABLED;
-		else if (this.state == SLL_BUTTON_STATES.DISABLED)
+		else if (this.state === SLL_BUTTON_STATES.DISABLED)
 			this.state = SLL_BUTTON_STATES.UP;
 		console.log(`button ${this.id} state ${this.state}`);
 	}
@@ -175,7 +176,7 @@ class SLLTextButton extends SLLLayer {
 
 class SLLImageButton extends SLLTextButton {
 	constructor(lid, img, rect, border = 0) {
-		var borderedRect = new SLLRectangle(rect.x-border, rect.y-border, 
+		let borderedRect = new SLLRectangle(rect.x-border, rect.y-border,
 				rect.width+2*border, rect.height+2*border);
 		super(lid, borderedRect, "", border);
 		this.removeChild(this.message);
