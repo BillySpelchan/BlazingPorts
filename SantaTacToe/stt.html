@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Santa Tac Toe</title>
+</head>
+<body>
+<h1>Santa Tac Toe</h1>
+<canvas id="game" width="640" height="480"></canvas>
+<script src="../ssl/sll.js"></script>
+<script src="../ssl/sll_gui.js"></script>
+<script src="ttt.js"></script>
+<script src="stt.js"></script>
+<script>
+    let stage;
+    let bounds = new SLLRectangle(0,0,640,480);
+
+    function draw() {
+        console.log("Should be updating")
+        //this.drawSelf(this.ctx, this.bounds);
+        let canvas = document.getElementById("game");
+        let ctx = canvas.getContext('2d');
+        stage.render(ctx, stage.bounds);
+    }
+
+    function init() {
+        stage = new STTMain(bounds);
+        //stage.swapScreen(STTConsts.TITLE_SCREEN);
+        let canvas = document.getElementById("game");
+        canvas.addEventListener("mousedown", mouseDown);
+        canvas.addEventListener("mousemove", mouseMove);
+        canvas.addEventListener("mouseup", mouseUp);
+        draw();
+    }
+
+    function canvasMouseCoordsFromEvent(event)
+    {
+        let canvas = document.getElementById('game');
+
+        let ox = event.offsetX;
+        if (ox === undefined)
+            ox = event.pageX-canvas.offsetLeft;
+        let oy = event.offsetY;
+        if (oy === undefined)
+            oy = event.pageY-canvas.offsetTop;
+        return new SLLPoint(ox, oy);
+    }
+
+    function mouseDown(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = true;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseDown(p.x, p.y))
+            draw();
+    }
+
+    function mouseMove(event)
+    {
+        if ( !stage ) return;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseMove(p.x, p.y))
+            draw();
+    }
+
+    function mouseUp(event)
+    {
+        if ( !stage ) return;
+        isMouseDown = false;
+        let p = canvasMouseCoordsFromEvent(event);
+        if (stage.mouseUp(p.x, p.y))
+            draw();
+    }
+
+    init();
+</script>
+</body>
+</html>
